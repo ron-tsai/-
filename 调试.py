@@ -1,5 +1,5 @@
 from selenium import webdriver
-import time
+
 import pandas as pd
 
 
@@ -8,14 +8,7 @@ df=pd.DataFrame(columns=['timer','title','source','content'])
 
 driver=webdriver.Chrome()
 driver.get(url='https://news.cnstock.com/news/sns_jg/index.html')
-time.sleep(2)
 
-
-for i in range(1000):
-    if i <1000:
-        time.sleep(1)
-        driver.find_element_by_id('j_more_btn').click()
-        driver.find_element_by_id('j_more_btn').click()
 
 handle = driver.current_window_handle
 
@@ -34,31 +27,17 @@ for li in li_list:
             title=driver.find_element_by_xpath('.//h1[@class="title"]').text
             timer=driver.find_element_by_xpath('.//span[@class="timer"]').text
             source=driver.find_element_by_xpath('.//span[@class="source"]').text
-            elements = driver.find_element_by_xpath('.//div[@class="content"]')
-            contents = elements.find_elements_by_xpath('.//p')
-            contain = ''
+            elements=driver.find_element_by_xpath('.//div[@class="content"]')
+            contents=elements.find_elements_by_xpath('.//p')
+            contain=''
             for content in contents:
-                text = content.get_attribute('innerText')
-                contain = contain + ' ' + text
-            s = pd.Series([timer, title, source, contain], index=['timer', 'title', 'source', 'content'])
-            df = df.append(s, ignore_index=True)
+                text=content.get_attribute('innerText')
+                contain=contain+' '+text
+            s=pd.Series([timer,title,source,contain],index=['timer','title','source','content'])
+            df=df.append(s,ignore_index=True)
 
 
             driver.close()
             driver.switch_to.window(handle)
 
-df.to_excel('C:\\Users\Administrator\Desktop\\完结.xlsx')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+df.to_excel('C:\\Users\Administrator\Desktop\\调试.xlsx')

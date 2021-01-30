@@ -44,16 +44,16 @@ ROBOTSTXT_OBEY = False
 #}
 
 # Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
+# # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+# SPIDER_MIDDLEWARES = {
 #    'firstblood.middlewares.FirstbloodSpiderMiddleware': 543,
-#}
+# }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
+# DOWNLOADER_MIDDLEWARES = {
 #    'firstblood.middlewares.FirstbloodDownloaderMiddleware': 543,
-#}
+# }
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html

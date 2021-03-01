@@ -1,0 +1,5 @@
+﻿txt,baiduAPI_sentiment,baiduAPI_positive_prob,baiduAPI
+真糟糕，亏了5000元,0,1.03978e-05,"{'log_id': 1221666457906785017, 'text': 'ÕæÔã¸â£¬¿÷ÁË5000Ôª', 'items': [{'positive_prob': 1.03978e-05, 'confidence': 0.999977, 'negative_prob': 0.99999, 'sentiment': 0}]}"
+还不错，赚了200块,2,0.991214,"{'log_id': 6469927796180834809, 'text': '»¹²»´í£¬×¬ÁË200¿é', 'items': [{'positive_prob': 0.991214, 'confidence': 0.980475, 'negative_prob': 0.00878627, 'sentiment': 2}]}"
+哎呦我去。,2,0.707507,"{'log_id': 4714835867446754809, 'text': '°¥ßÏÎÒÈ¥¡£', 'items': [{'positive_prob': 0.707507, 'confidence': 0.350016, 'negative_prob': 0.292493, 'sentiment': 2}]}"
+我的比亚迪卖了，但是它涨了,2,0.730323,"{'log_id': 1076878574175731737, 'text': '我的比亚迪卖了，但是它涨了', 'items': [{'positive_prob': 0.730323, 'confidence': 0.400717, 'negative_prob': 0.269677, 'sentiment': 2}]}"

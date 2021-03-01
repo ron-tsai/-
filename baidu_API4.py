@@ -103,9 +103,9 @@ if __name__ == '__main__':
     time_end = time.time()
     print('分析评论一共耗时：', time_end - time_start)
 
-    text['baiduAPI_sentiment'] = sentiment
+    # text['baiduAPI_sentiment'] = sentiment
     text['baiduAPI_positive_prob'] = positive_prob
-    text['baiduAPI'] = baiduAPI
+    # text['baiduAPI'] = baiduAPI
 
     # 保存
-    text.to_csv("api_file.csv", index=None, encoding="utf_8_sig")
+    text.to_csv("C:\\Users\Administrator\Desktop\爬取内容\\api_file.csv", index=None, encoding="utf_8_sig")

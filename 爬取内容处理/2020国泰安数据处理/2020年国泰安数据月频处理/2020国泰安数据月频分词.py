@@ -1,7 +1,7 @@
-
+import gc
 import jieba
 jieba.setLogLevel(20)
-with open("C:\\Users\Administrator\Desktop\爬取内容\聚合.txt",'r',encoding='utf-8') as f:
+with open("F:\\newstart\software\category\\tool\category\deal_with_data\国泰安\新闻聚合\月频数据\\2020年12月聚合.txt",'r',encoding='utf-8') as f:
     text=f.read()
 
 

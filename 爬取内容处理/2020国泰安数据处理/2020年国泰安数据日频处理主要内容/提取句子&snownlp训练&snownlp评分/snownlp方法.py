@@ -17,7 +17,7 @@ for excel_name in os.listdir('F:\\newstart\software\category\\tool\category\deal
     excel_names.append(excel_name)
 
 df_list=[]
-for excel_name in excel_names[9:]:
+for excel_name in excel_names[86:]:
 
     dir_path='F:\\newstart\software\category\\tool\category\deal_with_data\国泰安\按日拆分'
     excel_path=f'{dir_path}/{excel_name}'
@@ -26,6 +26,7 @@ for excel_name in excel_names[9:]:
     for text in df['content']:
         results_list = []
         for name in names:
+            text=str(text)
             results = re.findall(r'[^。]*?{}[^。]*?。'.format(name), text)
             results_list = results_list + results
 

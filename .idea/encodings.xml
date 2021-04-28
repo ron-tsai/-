@@ -2,6 +2,16 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/degree.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/insufficientlydict.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/inversedict.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/ishdict.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/moredic.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/mostdic.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/negdic.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/overdic.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/pos_neg_dict.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/postdic.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/verydic.txt" charset="GBK" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>

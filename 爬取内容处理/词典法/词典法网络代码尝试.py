@@ -42,7 +42,7 @@ def classify_words(word_dict):
     not_word_list = not_word_file.readlines()
 
     # 读取程度副词文件
-    degree_file = open('degree.txt', 'r+', encoding='GBK')
+    degree_file = open('postdic.txt', 'r+', encoding='GBK')
     degree_list = degree_file.readlines()
     degree_dic = defaultdict()
     # 程度副词与情感词处理方式一样，转为程度副词字典对象，key为程度副词，value为对应的程度值
@@ -142,4 +142,5 @@ def setiment_score(sententce):
 
 
 # 测试
-print(setiment_score("原标题：收购LSG带来约15亿商誉减值 汤臣倍健2019年预亏3.65～3.7亿元    "))
+# print(setiment_score("原标题：收购LSG带来约15亿商誉减值 汤臣倍健2019年预亏3.65～3.7亿元    "))
+print(setiment_score("商誉减值，亏"))

@@ -1,0 +1,72 @@
+import pandas as pd
+from matplotlib import pyplot as plt
+import numpy as np
+
+
+
+fif_train_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\\15分钟数据\\15min_train_data.xlsx')
+fif_val_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\\15分钟数据\\15min_val_data.xlsx')
+fif_test_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\\15分钟数据\\15min_test_data.xlsx')
+
+daily_train_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\日频数据\daily_train_data.xlsx')
+daily_val_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\日频数据\daily_val_data.xlsx')
+daily_test_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\日频数据\daily_test_data.xlsx')
+
+train_target_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\每日涨跌数据\\训练集target.xlsx')
+val_target_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\每日涨跌数据\\验证集target.xlsx')
+test_target_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\每日涨跌数据\\测试集target.xlsx')
+
+print(daily_train_df['open'].mean(axis=0))
+print(daily_train_df['open'].mean())
+print(daily_train_df['open'].std(axis=0))
+print(daily_train_df['open'].std())
+
+
+daily_open_mean_value = daily_train_df['open'].mean(axis=0)
+daily_high_mean_value = daily_train_df['high'].mean(axis=0)
+daily_low_mean_value = daily_train_df['low'].mean()
+daily_close_mean_value = daily_train_df['close'].mean()
+daily_volumerate_mean_value = daily_train_df['volume_rate'].mean()
+
+daily_open_std_value = daily_train_df['open'].std()
+daily_high_std_value = daily_train_df['high'].std()
+daily_low_std_value = daily_train_df['low'].std()
+daily_close_std_value = daily_train_df['close'].std()
+daily_volumerate_std_value = daily_train_df['volume_rate'].std()
+
+fif_open_mean_value = fif_train_df['open'].mean(axis=0)
+fif_high_mean_value = fif_train_df['high'].mean(axis=0)
+fif_low_mean_value = fif_train_df['low'].mean()
+fif_close_mean_value = fif_train_df['close'].mean()
+
+fif_volumerate_mean_value = fif_train_df['volume_rate'].mean()
+
+fif_open_std_value = fif_train_df['open'].std()
+fif_high_std_value = fif_train_df['high'].std()
+fif_low_std_value = fif_train_df['low'].std()
+fif_close_std_value = fif_train_df['close'].std()
+fif_volumerate_std_value = fif_train_df['volume_rate'].std()
+def daily_norm(df):
+
+    df['open']=(df['open']-daily_open_mean_value)/daily_open_std_value
+    df['high'] = (df['high'] - daily_high_mean_value) / daily_high_std_value
+    df['low'] =  (df['low'] - daily_low_mean_value) / daily_low_std_value
+    df['close'] =  (df['close'] - daily_close_mean_value) / daily_close_std_value
+    df['volume_rate'] = (df['volume_rate'] - daily_volumerate_mean_value) / daily_volumerate_std_value
+
+    return df
+def fif_norm(df):
+
+    df['open']=(df['open']-fif_open_mean_value)/daily_open_std_value
+    df['high'] = (df['high'] - fif_high_mean_value) / daily_high_std_value
+    df['low'] =  (df['low'] - fif_low_mean_value) / daily_low_std_value
+    df['close'] =  (df['close'] - fif_close_mean_value) / fif_close_std_value
+    df['volume_rate'] = (df['volume_rate'] - fif_volumerate_mean_value) / fif_volumerate_std_value
+
+    return df
+daily_norm=daily_train_df.apply(daily_norm,axis=1)
+fif_norm=fif_train_df.apply(fif_norm,axis=1)
+print(daily_norm)
+print(fif_norm)
+fif_norm.to_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化数据\\15min_train_data.xlsx')
+daily_norm.to_excel('F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化数据\\daily_train_data.xlsx')

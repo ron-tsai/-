@@ -5,13 +5,13 @@ target_df=pd.read_excel('F:\\newstart\software\category\\tool\category\deal_with
 # train_df['trade_time']=pd.to_datetime(train_df['trade_time'])
 
 
-# print(train_df.loc[train_df.index==320])
+print(train_df.loc[train_df.index==320])
 
 
-rows=list(range(320,10559,16))
+rows=list(range(320,10560,16))
 
-# print(rows)
-# print(len(rows))
+print(rows)
+print(len(rows))
 
 samples = np.zeros((len(rows),
                            16,

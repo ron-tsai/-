@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/新闻文本处理/新闻文本综合试验场/test_result.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/新闻文本处理/论文词典法CSDN/Sentiment_dict/test_result.txt" charset="GBK" />
     <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/degree.txt" charset="GBK" />
     <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/insufficientlydict.txt" charset="GBK" />
     <file url="file://$PROJECT_DIR$/爬取内容处理/词典法/hp/inversedict.txt" charset="GBK" />

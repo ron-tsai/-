@@ -1,0 +1,193 @@
+import pandas as pd
+import numpy as np
+import os
+from matplotlib import pyplot as plt
+import sklearn
+import numpy as np
+from keras.models import Model
+from keras import layers
+from keras import Input
+from sklearn.model_selection import StratifiedKFold
+from numpy import random
+from keras import callbacks
+from keras.callbacks import ReduceLROnPlateau
+import keras
+import keras.losses
+
+class Data_maker:
+    def daily_train_data(self,data):
+        while True:
+            rows = list(range(1, 1470)) #总共1489个数据，由于扣除前面20个数据，所以为1469
+            samples = np.zeros((len(rows),
+                                 20,
+                                 5))
+            for j in rows:
+
+                samples[j - 1] = data.loc[
+                                  (data.index >= j -1) & (data.index < 20 + j -1),
+                                  'open':]
+            return samples
+    def fif_train_data(self,data):
+        while True:
+            rows = list(range(1, 1470))
+            samples = np.zeros((len(rows),
+                                 16,
+                                 5))
+            for j in rows:
+
+                samples[j - 1] = data.loc[
+                              (data.index >= (j-1) * 16 ) & (data.index < j * 16),
+                              'open':]
+            return samples
+
+    def daily_test_data(self,data):
+        while True:
+            rows = list(range(1, 374))
+            samples = np.zeros((len(rows),
+                                 20,
+                                 5))
+            for j in rows:
+
+                samples[j - 1] = data.loc[
+                                  (data.index >= j -1) & (data.index < 20 + j -1),
+                                  'open':]
+            return samples
+    def fif_test_data(self,data):
+        while True:
+            rows = list(range(1, 374))
+            samples = np.zeros((len(rows),
+                                 16,
+                                 5))
+            for j in rows:
+
+                samples[j - 1] = data.loc[
+                                 (data.index >= (j - 1) * 16) & (data.index < j * 16),
+                                 'open':]
+            return samples
+    def target_train_data(self,data):
+        while True:
+            rows = list(range(1, 1470))
+            targets = np.zeros((len(rows),))
+            for j in rows:
+                targets[j - 1] = data.loc[data.index == j - 1, 'target']
+            return targets
+    def target_test_data(self,data):
+        while True:
+            rows = list(range(1, 374))
+            targets = np.zeros((len(rows),))
+            for j in rows:
+                targets[j - 1] = data.loc[data.index == j - 1, 'target']
+            return targets
+
+
+
+fif_dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\武汉金融原时间数据复现\\8比2\\15分钟频'
+daily_dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\武汉金融原时间数据复现\\8比2\日频'
+target_dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\武汉金融原时间数据复现\\8比2\每日涨跌'
+daily_train_df=pd.read_excel(os.path.join(daily_dir,'train_norm.xlsx'))
+fif_train_df=pd.read_excel(os.path.join(fif_dir,'train_norm.xlsx'))
+daily_test_df=pd.read_excel(os.path.join(daily_dir,'test_norm.xlsx'))
+fif_test_df=pd.read_excel(os.path.join(fif_dir,'test_norm.xlsx'))
+target_train_df=pd.read_excel(os.path.join(target_dir,'test_target.xlsx'))
+target_test_df=pd.read_excel(os.path.join(target_dir,'test_target.xlsx'))
+DM=Data_maker()
+
+daily_train=DM.daily_train_data(daily_train_df)
+daily_test=DM.daily_test_data(daily_test_df)
+fif_train=DM.fif_train_data(fif_train_df)
+fif_test=DM.fif_test_data(fif_test_df)
+target_train=DM.target_train_data(target_train_df)
+target_test=DM.target_test_data(target_test_df)
+
+
+a=random.randint(0,1469,4)
+
+# np.set_printoptions(threshold='nan')
+print(daily_train.shape,daily_test.shape,fif_train.shape,fif_test.shape,target_train.shape,target_test.shape)
+print(daily_train,daily_test,fif_train,fif_test,target_train,target_test)
+
+
+
+
+
+
+
+##K折
+seed=7
+kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
+cvscores = []
+for train, val in kfold.split([daily_train,fif_train], target_train):
+    # create model
+    ##### 一、模型搭建
+    # 15分钟频输入训练(!!!卷积滤镜行列先后)
+    fif_min_input = Input(shape=(16, 5), dtype='float32', name='fif_min_input')
+    # fif_min_input=(8,16,4,1)
+    Conv1D_fif = layers.Conv1D(16, 1, strides=1)(fif_min_input)
+    LSTM_fif = layers.LSTM(100)(Conv1D_fif)
+
+    # 日频输入训练
+    daily_input = Input(shape=(20, 5), dtype='float32', name='daily_input')
+    # daily_input=(8,16,4,1)
+    Conv1D_daily = layers.Conv1D(16, 1, strides=1)(daily_input)
+    LSTM_daily = layers.LSTM(100)(Conv1D_daily)
+    # 15分钟频训练结果和日频训练结果合并
+    concatenated = layers.concatenate([LSTM_fif, LSTM_daily], axis=-1)  # axis=-1按照最后一个轴粘合
+
+    alloy = layers.Dense(20, activation='relu')(concatenated)  # 将粘合结果再接一个全连接层
+    dropout = layers.Dropout(0.2)(alloy)
+    output = layers.Dense(1, activation='sigmoid')(dropout)
+    model = Model([fif_min_input, daily_input], output)  # 八股文：将输入和输出圈起来
+
+    print(model.summary())
+    model.compile(optimizer=keras.optimizers.adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc'])
+
+    # reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, mode='auto')
+
+    # callbacks=[callbacks.EarlyStopping(monitor='val_loss',patience=0,verbose=0,mode='auto')]
+    # ,callbacks=[reduce_lr]
+    # history = model.fit(x=[fif_train, daily_train], y=target_train, batch_size=8, validation_split=0.2, epochs=43)
+    scores = model.fit(x=train, y=target_train, batch_size=8, validation_data=val, epochs=43)
+
+    # model.save("10.model")
+    loss, accuracy = model.evaluate(x=[fif_test, daily_test], y=target_test)
+
+    print(loss, accuracy)
+
+    # model = Sequential()
+    # model.add(Dense(12, input_dim=8, activation='relu'))
+    # model.add(Dense(8, activation='relu'))
+    # model.add(Dense(1, activation='sigmoid'))
+    # # Compile model
+    # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # # Fit the model
+    # model.fit(X[train], Y[train], epochs=150, batch_size=10, verbose=0)
+    # # evaluate the model
+    # scores = model.evaluate(X[test], Y[test], verbose=0)
+    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    cvscores.append(scores[1] * 100)
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+
+
+# acc=history.history['acc']
+# val_acc=history.history['val_acc']
+# loss=history.history['loss']
+# val_loss=history.history['val_loss']
+#
+# epochs=range(len(acc))
+# plt.plot(epochs,acc,'bo',label='Training acc')
+# plt.plot(epochs,val_acc,'b',label='Validation acc')
+# plt.title('Training and validation accuracy')
+# plt.legend()
+#
+# plt.figure()
+#
+# plt.plot(epochs,loss,'bo',label='Training loss')
+# plt.plot(epochs,val_loss,'b',label='Validation loss')
+# plt.title('Training and validation loss')
+# plt.legend()
+# plt.show()
+
+
+
+

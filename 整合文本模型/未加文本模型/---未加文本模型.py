@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from keras.models import Model
 from keras import layers
 from keras import Input
-from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
+from sklearn.metrics import confusion_matrix,roc_curve,auc,recall_score,precision_score,f1_score
 
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
@@ -15,18 +15,32 @@ import keras
 import keras.losses
 
 
+# 参数设置
+# wenben_back训练集测试集之前留出的时间长度
+wenben_back=20
+total_day=2062
+train_num=1650
+
+LSTM_num=100
+batch_size=8
+epochs=20
+drop_num=0.2
+dense_num=20
+
+test_num=total_day-train_num
 
 
 class Data_maker:
-    def __init__(self,train_num,test_num,fif_back,daily_back):
+    def __init__(self,train_num,test_num,fif_back,daily_back,wenben_back):
         self.train_num=train_num
         self.test_num=test_num
         self.fif_back=fif_back
         self.daily_back=daily_back
+        self.wenben_back=wenben_back
 
     def daily_train_data(self,data):
         while True:
-            rows = list(range(self.train_num - self.daily_back)) #总共1489个数据，由于扣除前面20个数据，所以为1469
+            rows = list(range(self.train_num - self.wenben_back)) #总共1489个数据，由于扣除前面20个数据，所以为1469
             samples = np.zeros((len(rows),
                                  self.daily_back,
                                  5))
@@ -39,7 +53,7 @@ class Data_maker:
             return samples
     def fif_train_data(self,data):
         while True:
-            rows = list(range(self.train_num - self.daily_back))
+            rows = list(range(self.train_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                  self.fif_back,
                                  5))
@@ -53,7 +67,7 @@ class Data_maker:
 
     def daily_test_data(self,data):
         while True:
-            rows = list(range(self.test_num - self.daily_back))
+            rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.daily_back,
                                  5))
@@ -67,7 +81,7 @@ class Data_maker:
             return samples
     def fif_test_data(self,data):
         while True:
-            rows = list(range(self.test_num - self.daily_back))
+            rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.fif_back,
                                  5))
@@ -81,7 +95,7 @@ class Data_maker:
             return samples
     def target_train_data(self,data):
         while True:
-            rows = list(range(self.train_num-self.daily_back))
+            rows = list(range(self.train_num-self.wenben_back))
             targets = np.zeros((len(rows),))
             for j in rows:
 
@@ -91,7 +105,7 @@ class Data_maker:
             return targets
     def target_test_data(self,data):
         while True:
-            rows = list(range(self.test_num-self.daily_back))
+            rows = list(range(self.test_num-self.wenben_back))
             targets = np.zeros((len(rows),))
             for j in rows:
 
@@ -101,7 +115,7 @@ class Data_maker:
             return targets
 
 
-origin_data=Data_maker(train_num=1650,test_num=413,fif_back=16,daily_back=20)
+origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back)
 
 dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化处理数据基础\数据区间试验'
 
@@ -206,12 +220,12 @@ def norm(df):
 #     return df
 
 
-def split_data(train_num=1650,daily_back=20):
+def split_data(train_num=train_num,wenben_back=wenben_back):
     daily_train_df=daily_df.loc[daily_df.index<train_num]
     daily_test_df=daily_df.loc[daily_df.index>=train_num]
     fif_train_df=fif_df.loc[fif_df.index<16*train_num]
     fif_test_df=fif_df.loc[fif_df.index>=16*train_num]
-    target_train_df=target_df.loc[target_df.index<train_num-daily_back]
+    target_train_df=target_df.loc[target_df.index<train_num-wenben_back]
     target_test_df=target_df.loc[target_df.index>=train_num]
 
     daily_train_df=norm(daily_train_df)
@@ -273,18 +287,18 @@ def my_model():
     fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # fif_min_input=(8,16,4,1)
     Conv1D_fif=layers.Conv1D(16,1,strides=1)(fif_min_input)
-    LSTM_fif=layers.LSTM(100)(Conv1D_fif)
+    LSTM_fif=layers.LSTM(LSTM_num)(Conv1D_fif)
 
     # 日频输入训练
     daily_input=Input(shape=(20,5),dtype='float32',name='daily_input')
     # daily_input=(8,16,4,1)
     Conv1D_daily=layers.Conv1D(16,1,strides=1)(daily_input)
-    LSTM_daily=layers.LSTM(100)(Conv1D_daily)
+    LSTM_daily=layers.LSTM(LSTM_num)(Conv1D_daily)
     # 15分钟频训练结果和日频训练结果合并
     concatenated=layers.concatenate([LSTM_fif,LSTM_daily],axis=-1) # axis=-1按照最后一个轴粘合
 
-    alloy=layers.Dense(20,activation='relu')(concatenated) #将粘合结果再接一个全连接层
-    dropout=layers.Dropout(0.2)(alloy)
+    alloy=layers.Dense(dense_num,activation='relu')(concatenated) #将粘合结果再接一个全连接层
+    dropout=layers.Dropout(drop_num)(alloy)
     output=layers.Dense(1,activation='sigmoid')(dropout)
     model=Model([fif_min_input,daily_input],output) #八股文：将输入和输出圈起来
 
@@ -295,14 +309,14 @@ def my_model():
 
 model=my_model()
 
-history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=8,validation_split=0.2,epochs=50)
+history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,validation_split=0.2,epochs=epochs)
 
 
 loss,accuracy = model.evaluate([fif_test,daily_test],y=target_test)
 print(loss,accuracy)
 
 def gen_y_pred():
-    y_predict=model.predict([fif_test,daily_test]).reshape(393).tolist()
+    y_predict=model.predict([fif_test,daily_test]).reshape(test_num-wenben_back).tolist()
     y_pred=[]
     for i,v in enumerate(y_predict):
         if v>0.5:
@@ -317,9 +331,7 @@ def gen_y_pred():
 
 
 y_pred=gen_y_pred()
-# fpr,tpr,threshold = roc_curve(target_test, y_pred) ###计算真正率和假正率
-# print(fpr,tpr,threshold)
-# roc_auc = auc(fpr,tpr)
+
 
 def paint():
     acc=history.history['acc']
@@ -342,7 +354,7 @@ def paint():
     return plt
 my_paint=paint()
 my_paint.show()
-#混淆矩阵绘制
+
 confusion_matrix = confusion_matrix(target_test, y_pred,labels=[1,0])
 precision_score=precision_score(target_test, y_pred)
 recall_score=recall_score(target_test, y_pred)
@@ -353,10 +365,32 @@ print('查准率：',precision_score)
 print('查全率：',recall_score)
 print('f1-score:',f1_score)
 
+#ROC曲线绘制
+y_predict=model.predict([fif_test,daily_test]).reshape(test_num-wenben_back).tolist()
+fpr,tpr,threshold = roc_curve(target_test, y_predict) ###计算真正率和假正率
+# print(fpr,tpr,threshold)
+roc_auc = auc(fpr,tpr)
 
-plt.matshow(confusion_matrix)
-plt.title('Confusion matrix')
-plt.colorbar()
-plt.ylabel('True label')
-plt.xlabel('Predicted label')
+
+lw = 2
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange',
+         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc) ###假正率为横坐标，真正率为纵坐标做曲线
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic example')
+plt.legend(loc="lower right")
 plt.show()
+
+
+
+#混淆矩阵绘制
+# plt.matshow(confusion_matrix)
+# plt.title('Confusion matrix')
+# plt.colorbar()
+# plt.ylabel('True label')
+# plt.xlabel('Predicted label')
+# plt.show()

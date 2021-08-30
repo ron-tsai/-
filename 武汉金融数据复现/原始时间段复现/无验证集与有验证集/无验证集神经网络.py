@@ -294,7 +294,7 @@ def my_model():
 
 model=my_model()
 
-history=model.fit(x=[fif_train,daily_train],y=train_targets,batch_size=16,validation_data=([fif_val,daily_val],val_targets),epochs=50)
+history=model.fit(x=[fif_train,daily_train],y=train_targets,batch_size=16,validation_data=([fif_val,daily_val],val_targets),epochs=16)
 
 
 

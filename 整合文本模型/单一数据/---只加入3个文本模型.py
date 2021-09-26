@@ -14,19 +14,17 @@ import keras
 
 import keras.losses
 
-wenben_back=20
-total_day=2063
+wenben_back=32
+total_day=2062
 train_num=1650
-long_term_back=16
-short_term_back=4
-wenben_sort=1
+long_term_back=32
+short_term_back=20
+wenben_sort=3
 batch_size=8
 epochs=40
-
-wenben_file='guanzhudu_data_ed.xlsx'
+LSTM_num=100
+mix_file='666777.xlsx'
 first_columns='search_index'
-
-
 
 test_num=total_day-train_num
 
@@ -51,7 +49,7 @@ class Data_maker:
 
                 samples[j] = data.loc[
                                   (data.index >= j) & (data.index < self.daily_back + j),
-                                  'open':]
+                                  'open':'volume_rate']
             print('日频训练array：',samples.shape)
             return samples
     def fif_train_data(self,data):
@@ -104,7 +102,7 @@ class Data_maker:
 
                 samples[j] = data.loc[
                                   (data.index >= self.train_num+j) & (data.index < self.train_num+self.daily_back + j),
-                                  'open':]
+                                  'open':'volume_rate']
             print('日测试array：',samples.shape)
             return samples
 
@@ -167,15 +165,15 @@ class Data_maker:
             print(targets.shape)
             return targets
 
-
 origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back,long_term_back=long_term_back,short_term_back=short_term_back)
 
+new_dir='F:\\newstart\software\category\\tool\category\deal_with_data\数据二合为一'
 dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化处理数据基础\数据区间试验'
 wenben_dir='F:\\newstart\software\category\\tool\category\deal_with_data\新闻来源筛选完成\情感赋分\每日均值'
-daily_df=pd.read_excel(os.path.join(dir,'daily_data.xlsx'))
+daily_df=pd.read_excel(os.path.join(new_dir,mix_file))
 fif_df=pd.read_excel(os.path.join(dir,'fif_data.xlsx'))
 target_df=pd.read_excel(os.path.join(dir,'target.xlsx'))
-wenben_df=pd.read_excel(os.path.join(wenben_dir,wenben_file))
+wenben_df=pd.read_excel(os.path.join(new_dir,mix_file))
 
 
 
@@ -204,19 +202,19 @@ def norm(df):
     return df
 def wenben_norm(df):
     x=df.copy()
-    # sector_score_mean_value = df['sector_score'].mean(axis=0)
+    sector_score_mean_value = df['sector_score'].mean(axis=0)
     search_index_mean_value = df['search_index'].mean(axis=0)
-    # media_attention_mean_value = df['media_attention'].mean(axis=0)
+    media_attention_mean_value = df['media_attention'].mean(axis=0)
 
 
-    # sector_score_std_value = df['sector_score'].std()
+    sector_score_std_value = df['sector_score'].std()
     search_index_std_value = df['search_index'].std()
-    # media_attention_std_value = df['media_attention'].std()
+    media_attention_std_value = df['media_attention'].std()
 
 
-    # x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
+    x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
     x['search_index'] = (df['search_index'] - search_index_mean_value) / search_index_std_value
-    # x['media_attention'] = (df['media_attention'] - media_attention_mean_value) / media_attention_std_value
+    x['media_attention'] = (df['media_attention'] - media_attention_mean_value) / media_attention_std_value
 
     df=x
     return df
@@ -242,6 +240,7 @@ def split_data(train_num=train_num,wenben_back=wenben_back):
     wenben_test_df = wenben_norm(wenben_test_df)
 
 
+
     return {'daily_train_df':daily_train_df,
             'daily_test_df':daily_test_df,
             'fif_train_df':fif_train_df,
@@ -254,8 +253,10 @@ def split_data(train_num=train_num,wenben_back=wenben_back):
 
 daily_train_df=split_data()['daily_train_df']
 print('日频训练切分：',daily_train_df.shape)
+
 daily_test_df=split_data()['daily_test_df']
 print('日频测试切分：',daily_test_df.shape)
+print('日频测试数据',daily_test_df)
 fif_train_df=split_data()['fif_train_df']
 print('十五分钟频训练切分：',fif_train_df.shape)
 fif_test_df=split_data()['fif_test_df']
@@ -266,6 +267,7 @@ target_test_df=split_data()['target_test_df']
 print('测试目标切分：',target_test_df.shape)
 wenben_norm_train_df=split_data()['wenben_train_df']
 wenben_norm_test_df=split_data()['wenben_test_df']
+print('文本数据',wenben_norm_test_df)
 
 
 
@@ -284,8 +286,10 @@ wenben_long_term_test=DM.wenben_long_term_test_data(wenben_norm_test_df)
 wenben_short_term_test=DM.wenben_short_term_test_data(wenben_norm_test_df)
 
 
-print('文本数据',wenben_long_term_train)
-print('交易数据',daily_train)
+# print('文本测试',wenben_long_term_test)
+# print('文本训练',wenben_long_term_train)
+print('交易训练数据',daily_train)
+print('交易测试数据',daily_test)
 
 
 def my_model(long_term_back,short_term_back,wenben_sort):
@@ -295,10 +299,10 @@ def my_model(long_term_back,short_term_back,wenben_sort):
     # 文本输入训练(!!!卷积滤镜行列先后)
     wenben_long_term_input=Input(shape=(long_term_back,wenben_sort),dtype='float32',name='wenben_long_term_input')
     Conv1D_fif=layers.Conv1D(16,1,strides=1)(wenben_long_term_input)
-    LSTM_long_term=layers.LSTM(100)(Conv1D_fif)
+    LSTM_long_term=layers.LSTM(LSTM_num)(Conv1D_fif)
     wenben_short_term_input = Input(shape=(short_term_back,wenben_sort), dtype='float32', name='wenben_short_term_input')
     Conv1D_fif = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
-    LSTM_short_term = layers.LSTM(100)(Conv1D_fif)
+    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_fif)
     # 15分钟频输入训练(!!!卷积滤镜行列先后)
     # fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # # fif_min_input=(8,16,4,1)
@@ -330,6 +334,8 @@ history=model.fit(x=[wenben_long_term_train,wenben_short_term_train],y=target_tr
 
 loss,accuracy = model.evaluate([wenben_long_term_test,wenben_short_term_test],y=target_test)
 print(loss,accuracy)
+y_predict = model.predict([wenben_long_term_test, wenben_short_term_test]).reshape(test_num - wenben_back).tolist()
+print(y_predict)
 
 def gen_y_pred():
     y_predict=model.predict([wenben_long_term_test,wenben_short_term_test]).reshape(test_num-wenben_back).tolist()
@@ -347,6 +353,7 @@ def gen_y_pred():
 
 
 y_pred=gen_y_pred()
+print(y_pred)
 # fpr,tpr,threshold = roc_curve(target_test, y_pred) ###计算真正率和假正率
 # print(fpr,tpr,threshold)
 # roc_auc = auc(fpr,tpr)
@@ -394,7 +401,7 @@ plt.show()
 #ROC曲线绘制
 y_predict=model.predict([wenben_long_term_test,wenben_short_term_test]).reshape(test_num-wenben_back).tolist()
 fpr,tpr,threshold = roc_curve(target_test, y_predict) ###计算真正率和假正率
-# print(fpr,tpr,threshold)
+print(fpr,tpr,threshold)
 roc_auc = auc(fpr,tpr)
 
 

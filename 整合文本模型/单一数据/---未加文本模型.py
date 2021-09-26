@@ -309,7 +309,7 @@ def my_model():
 
 model=my_model()
 
-history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,validation_split=0.2,epochs=epochs)
+history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,validation_split=0.25,epochs=epochs)
 
 
 loss,accuracy = model.evaluate([fif_test,daily_test],y=target_test)
@@ -332,6 +332,115 @@ def gen_y_pred():
 
 y_pred=gen_y_pred()
 
+
+# 回测代码试写
+
+class Back_tes_trader:
+    def __init__(self,train_num,daily_back,wenben_back):
+        self.train_num=train_num
+        self.daily_back=daily_back
+        self.wenben_back = wenben_back
+    def daily_test_data(self,data):
+        while True:
+            samples = data.loc[
+                data.index >=self.train_num-1+self.wenben_back ,
+                ['open','close']]
+            # print(data.index)
+            return samples
+
+back_tes_trader=Back_tes_trader(train_num=train_num,daily_back=20,wenben_back=wenben_back)
+
+
+
+def split_back_trader(train_num=train_num-1):
+
+    daily_test_df=daily_df.loc[daily_df.index>=train_num]
+
+    return {'daily_test_df':daily_test_df}
+
+
+back_df=split_back_trader()['daily_test_df']
+# print('日频测试切分：',back_df.shape)
+
+
+
+backtrader_df=back_tes_trader.daily_test_data(back_df)
+
+# print(backtrader_df.shape)
+# print(backtrader_df)
+
+backtrader_df['rate_of_return'] = backtrader_df['close'].rolling(2).apply(lambda x: x[1] / x[0] - 1, raw=True)
+backtrader_df['day_rate_of_return']=backtrader_df['close']/backtrader_df['open']-1
+
+clo_1=backtrader_df.loc[(backtrader_df.index<total_day-1),"close"].tolist()
+
+backtrader_df.loc[(backtrader_df.index>=train_num+20),'last_close']=clo_1
+backtrader_df['sale_rate_of_return']=backtrader_df['open']/backtrader_df['last_close']-1
+
+
+# print(backtrader_df)
+
+day_return_list=[]
+return_list=[]
+def backtrader(list,df):
+    a=0
+
+    rate_of_return = 1
+    for i,v in enumerate(list):
+        if (v ==1)&(a==0):
+            b=(1 + df.loc[train_num+20 + i, 'day_rate_of_return'])
+            rate_of_return= rate_of_return * b
+            a=1
+            day_return_list.append(b-1)
+            return_list.append(rate_of_return)
+
+        elif (v ==1)&(a==1):
+            b=(1 + df.loc[train_num+20 + i, 'rate_of_return'])
+            rate_of_return= rate_of_return *b
+            a=a
+            day_return_list.append(b-1)
+            return_list.append(rate_of_return)
+        elif (v==0)&(a==0):
+            rate_of_return=rate_of_return
+            a=a
+
+        elif (v==0)&(a==1):
+            a=0
+            b = (1 + df.loc[train_num+20 + i, 'sale_rate_of_return'])
+            rate_of_return=rate_of_return*b
+            day_return_list.append(b-1)
+            return_list.append(rate_of_return)
+    return a,day_return_list,rate_of_return,return_list
+
+
+result=backtrader(y_pred,backtrader_df)
+
+# final_list=[]
+# for i in result[3]:
+#     final_list.append(i-1)
+# print(final_list)
+
+# print(result[1])
+# print(result[2])
+
+sharp=(np.mean(result[1]))/(np.std(result[1]))
+print('夏普比率：',sharp)
+print('收益率：',result[2]-1)
+backtest_list=[]
+
+return_right_now=result[3]
+for i,v in enumerate(return_right_now):
+    if i<len(return_right_now)-1:
+        min=np.min(return_right_now[i+1:])
+        if v>min:
+            backtest = (v - min) / (v)
+            backtest_list.append(backtest)
+
+
+
+backtest=np.max(backtest_list)
+
+print('最大回测：',backtest)
 
 def paint():
     acc=history.history['acc']
@@ -394,3 +503,9 @@ plt.show()
 # plt.ylabel('True label')
 # plt.xlabel('Predicted label')
 # plt.show()
+
+df9=pd.DataFrame({'损失值':loss,'准确率':accuracy,'夏普值':sharp,'收益率':result[2]-1,'最大回撤':[backtest],'查准率':[precision_score],'查全率':[recall_score],'f1-score':[f1_score]})
+df10=pd.DataFrame({'每日收益率':result[1]})
+path9='C:\\Users\Administrator\Desktop'
+df9.to_excel(os.path.join(path9,'数据表.xlsx'),index=False)
+df10.to_excel(os.path.join(path9,'每日收益率表.xlsx'),index=False)

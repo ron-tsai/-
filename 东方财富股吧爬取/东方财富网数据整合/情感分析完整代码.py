@@ -24,6 +24,7 @@ df1=pd.DataFrame(columns=['time','title'])
 for fname in df_list:
     df=pd.read_excel(os.path.join(path,fname),dtype=object,usecols=['time','title'])
     print(df)
+    print('-----------------------' + fname)
 
 
     sent_list=df['title']

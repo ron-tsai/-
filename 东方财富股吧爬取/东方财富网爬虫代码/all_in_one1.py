@@ -8,7 +8,7 @@ from time import sleep
 import pandas as pd
 import os
 
-path='/Users/ccmac/Desktop/pc'
+path='/Users/ccmac/Desktop/pc1'
 
 def getHTMLText():
     tunnel = "tps371.kdlapi.com:15818"
@@ -23,7 +23,7 @@ def getHTMLText():
 
 
     df_list = os.listdir(path)
-    num_list = list(range(40000, 60000))
+    num_list = list(range(60000, 70000))
     # print(num_list)
     complete_list = []
     for fname in df_list:
@@ -79,7 +79,7 @@ def getHTMLText():
                 "https": "http://%(user)s:%(pwd)s@%(proxy)s/" % {"user": username, "pwd": password, "proxy": tunnel}
             }
             df_list = os.listdir(path)
-            num_list = list(range(40000, 60000))
+            num_list = list(range(60000, 70000))
             # print(num_list)
             complete_list = []
             for fname in df_list:

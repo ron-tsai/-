@@ -8,6 +8,18 @@ path_1='/Users/ccmac/Desktop/情感分析存储/2016年'
 
 
 df_list=os.listdir(path)
+df_elist=os.listdir(path_1)
+
+complete_list=[]
+
+for efname in df_elist:
+    complete_list.append(efname[1:])
+    # print(fname[:-5])
+for del_v in complete_list:
+    print(del_v)
+    if del_v != '.DS_' and del_v !='DS_Store':
+
+        df_list.remove(del_v)
 df1=pd.DataFrame(columns=['time','title'])
 for fname in df_list:
     df=pd.read_excel(os.path.join(path,fname),dtype=object,usecols=['time','title'])

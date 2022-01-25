@@ -3,8 +3,11 @@ import os
 from paddlenlp import Taskflow
 
 senta = Taskflow("sentiment_analysis", model="skep_ernie_1.0_large_ch")
-path='/Users/ccmac/Desktop/新爬虫分类/2017年'
-path_1='/Users/ccmac/Desktop/情感分析存储/2017年'
+
+year=2017
+
+path='/Users/ccmac/Desktop/新爬虫分类/{}年'.format(year)
+path_1='/Users/ccmac/Desktop/情感分析存储/{}年'.format(year)
 
 
 df_list=os.listdir(path)
@@ -30,6 +33,7 @@ for fname in df_list:
     emotion_list=[]
     for sent in sent_list:
         print(sent)
+        sent=str(sent)
 
         emotion = senta(sent)[0]['label']
         if emotion=='positive':
@@ -46,5 +50,5 @@ for fname in df_list:
     df['label']=emotion_list
     for time in df['time']:
         # df['time']=pd.to_datetime(df['time'])
-        df['date'] = pd.to_datetime(df['time'].add(' 2021'))
+        df['date'] = pd.to_datetime(df['time'].add(' {}'.format(year)))
     df.to_excel(os.path.join(path_1,'e{}.xlsx').format(fname[:-5]),index=False,columns=['date','title','label'])

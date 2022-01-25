@@ -9,7 +9,7 @@ df=pd.read_excel(os.path.join(path,"2002.xlsx"),usecols=[1,2])
 
 for time in df['time']:
     # df['time']=pd.to_datetime(df['time'])
-    df['date']=pd.to_datetime(df['time'].add(' 2021'))
+    df['date']=pd.to_datetime(df['time'].add(' 2017'))
 
 
 print(df)

@@ -1,18 +1,19 @@
 import pandas as pd
 import numpy as np
 import os
+from tensorflow import keras
 from matplotlib import pyplot as plt
-from keras.models import Model
-from keras import layers
-from keras import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers
+from tensorflow.keras import Input
 from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
 
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
-import keras
 
-import keras.losses
+
+# from tensorflow import losses
 
 wenben_back=20
 total_day=2062
@@ -23,7 +24,7 @@ short_term_back=2
 
 wenben_sort=2
 batch_size=8
-epochs=20
+epochs=1
 LSTM_num=100
 dense_num=20
 
@@ -35,6 +36,8 @@ first_columns='search_index'
 
 test_num=total_day-train_num
 
+
+### 数据转变为array
 
 class Data_maker:
     def __init__(self,train_num,test_num,fif_back,daily_back,wenben_back,long_term_back,short_term_back):
@@ -49,12 +52,13 @@ class Data_maker:
     def daily_train_data(self,data):
         while True:
             rows = list(range(self.train_num - self.wenben_back)) #总共1650个数据，由于扣除前面20个数据，所以为1630
+            ### 先构造空（预测日长度*日后移）array
             samples = np.zeros((len(rows),
                                  self.daily_back,
                                  5))
             print(samples.shape)
             for j in rows:
-
+                ### 每一个填入用于预测一天的开盘价到波动率矩阵
                 samples[j] = data.loc[
                                   (data.index >= j) & (data.index < self.daily_back + j),
                                   'open':'volume_rate']
@@ -163,7 +167,7 @@ class Data_maker:
             for j in rows:
 
 
-                targets[j] = data.loc[data.index == j, 'target']
+                targets[j] = data.loc[data.index == j+self.wenben_back, 'target']
             print('训练标签array',targets.shape)
             return targets
     def target_test_data(self,data):
@@ -173,16 +177,18 @@ class Data_maker:
             for j in rows:
 
 
-                targets[j] = data.loc[data.index == self.train_num+j, 'target']
+                targets[j] = data.loc[data.index == self.train_num+j+self.wenben_back, 'target'] ##出问题：应该是。而不是***：data.index == self.train_num+j
             print(targets.shape)
             return targets
 
 
 origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back,long_term_back=long_term_back,short_term_back=short_term_back)
 
-new_dir='F:\\newstart\software\category\\tool\category\deal_with_data\数据二合为一'
-dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化处理数据基础\数据区间试验'
-wenben_dir='F:\\newstart\software\category\\tool\category\deal_with_data\新闻来源筛选完成\情感赋分\每日均值'
+
+### 一、读取原始数据
+new_dir='/Users/ccmac/Documents/毕业论文数据/数据二合为一'
+dir='/Users/ccmac/Documents/毕业论文数据/数据区间试验'
+wenben_dir='/Users/ccmac/Documents/毕业论文数据/每日均值'
 daily_df=pd.read_excel(os.path.join(new_dir,mix_file))
 fif_df=pd.read_excel(os.path.join(dir,'fif_data.xlsx'))
 target_df=pd.read_excel(os.path.join(dir,'target.xlsx'))
@@ -233,7 +239,7 @@ def wenben_norm(df):
     return df
 
 
-
+### 切分数据
 def split_data(train_num=train_num,wenben_back=wenben_back):
     daily_train_df=daily_df.loc[daily_df.index<train_num]
     daily_test_df=daily_df.loc[daily_df.index>=train_num]
@@ -242,7 +248,7 @@ def split_data(train_num=train_num,wenben_back=wenben_back):
     wenben_train_df=wenben_df.loc[wenben_df.index<train_num]
     wenben_test_df=wenben_df.loc[wenben_df.index>=train_num]
 
-    target_train_df=target_df.loc[target_df.index<train_num-wenben_back]
+    target_train_df=target_df.loc[target_df.index<train_num]
     target_test_df=target_df.loc[target_df.index>=train_num]
 
     daily_train_df=norm(daily_train_df)
@@ -330,7 +336,7 @@ def my_model(long_term_back,short_term_back,wenben_sort):
     model=Model([fif_min_input,daily_input,wenben_long_term_input,wenben_short_term_input],output) #八股文：将输入和输出圈起来
 
     print(model.summary())
-    model.compile(optimizer=keras.optimizers.adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
+    model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
     return model
     # reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, mode='auto')
 
@@ -343,7 +349,7 @@ loss,accuracy = model.evaluate([fif_test,daily_test,wenben_long_term_test,wenben
 print(loss,accuracy)
 
 def gen_y_pred():
-    y_predict=model.predict([fif_test,daily_test,wenben_long_term_test,wenben_short_term_test]).reshape(test_num-wenben_back).tolist()
+    y_predict=model.predict([fif_test,daily_test,wenben_long_term_test,wenben_short_term_test],batch_size=1).reshape(test_num-wenben_back).tolist() ###batch_size要设为1，不然evaluate和predict结果不同
     y_pred=[]
     for i,v in enumerate(y_predict):
         if v>0.5:
@@ -401,6 +407,8 @@ backtrader_df['day_rate_of_return']=backtrader_df['close']/backtrader_df['open']
 
 clo_1=backtrader_df.loc[(backtrader_df.index<total_day-1),"close"].tolist()
 
+print(len(clo_1))
+print(backtrader_df.loc[(backtrader_df.index>=train_num+20+1),:])
 backtrader_df.loc[(backtrader_df.index>=train_num+20+1),'last_close']=clo_1
 backtrader_df['sale_rate_of_return']=backtrader_df['open']/backtrader_df['last_close']-1
 
@@ -455,8 +463,8 @@ result=backtrader(y_pred,backtrader_df)
 print(result[1])
 print(result[2])
 print(result[3])
-
-sharp=(np.mean(result[1]))/(np.std(result[1],ddof=1))
+pingjun_nian_jiaoyi_ri=240*len(result[1])/(len(y_pred))
+sharp=(np.mean(result[1]))/(np.std(result[1],ddof=1))*np.sqrt(pingjun_nian_jiaoyi_ri)
 # sharp1=(np.mean(result[4]))/(np.std(result[4]))
 # print('夏普比率--：',sharp1)
 print('夏普比率：',sharp)
@@ -545,6 +553,6 @@ plt.show()
 
 df9=pd.DataFrame({'损失值':loss,'准确率':accuracy,'夏普值':sharp,'收益率':result[2]-1,'最大回撤':[backtest],'查准率':[precision_score],'查全率':[recall_score],'f1-score':[f1_score]})
 df10=pd.DataFrame({'每日收益率':result[1]})
-path9='C:\\Users\Administrator\Desktop'
+path9='/Users/ccmac/Desktop'
 df9.to_excel(os.path.join(path9,'数据表.xlsx'),index=False)
 df10.to_excel(os.path.join(path9,'每日收益率表.xlsx'),index=False)

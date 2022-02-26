@@ -44,8 +44,9 @@ def get_ptbk(uniqid):
     return json.loads(resp)['data']
 
 
-def get_data(keyword, start='2011-01-02', end='2022-01-02'):
+def get_data(keyword, start='2011-01-01', end='2011-12-31'):
     url = "https://index.baidu.com/api/SearchApi/index?area=0&word=[[%7B%22name%22:%22{}%22,%22wordType%22:1%7D]]&startDate={}&endDate={}".format(keyword, start, end)
+
     data = get_html(url)
     data = json.loads(data)
     uniqid = data['data']['uniqid']
@@ -66,7 +67,7 @@ def get_data(keyword, start='2011-01-02', end='2022-01-02'):
 
 if __name__ == '__main__':
     keyword = "沪深300指数"
-    start_date = "2011-01-02"
-    end_date = "2022-01-02"
+    start_date = "2015-01-01"
+    end_date = "2015-12-31"
     get_data(keyword, start_date, end_date)
 

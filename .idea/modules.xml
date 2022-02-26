@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../scrapy-redis/.idea/scrapy-redis.iml" filepath="$PROJECT_DIR$/../scrapy-redis/.idea/scrapy-redis.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/thesis.iml" filepath="$PROJECT_DIR$/.idea/thesis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/-.iml" filepath="$PROJECT_DIR$/.idea/-.iml" />
     </modules>
   </component>
 </project>

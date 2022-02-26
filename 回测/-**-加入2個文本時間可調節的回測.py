@@ -26,7 +26,7 @@ total_day=1338
 train_num=1204
 long_term_back=10
 
-short_term_back=4
+short_term_back=5
 
 wenben_sort=2
 batch_size=8

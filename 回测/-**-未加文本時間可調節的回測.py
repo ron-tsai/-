@@ -14,16 +14,16 @@ plt.rcParams['axes.unicode_minus'] = False
 
 
 
-begin_date='2016-01-01'
+begin_date='2013-01-01'
 end_date='2021-09-30'
 
 
 
 wenben_back=20
-total_day=1338
-train_num=1204
+total_day=2062
+train_num=1650
 long_term_back=10
-short_term_back=2
+short_term_back=10
 wenben_sort=2
 batch_size=8
 epochs=20
@@ -347,7 +347,7 @@ def my_model():
 
 model=my_model()
 
-history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,validation_split=0.125,epochs=epochs)
+history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,validation_split=0.25,epochs=epochs)
 
 
 loss,accuracy = model.evaluate([fif_test,daily_test],y=target_test)

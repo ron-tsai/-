@@ -13,23 +13,30 @@ plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
 
 
-# from tensorflow import losses
+# import keras.losses
+
+
+begin_date='2016-01-01'
+end_date='2021-09-01'
+
+
 
 wenben_back=20
-total_day=2062
-train_num=1650
+total_day=1338
+train_num=1204
+long_term_back=10
 
-long_term_back=20
-short_term_back=2
+short_term_back=10
 
-wenben_sort=2
-batch_size=8
+wenben_sort=3
+batch_size=16
 epochs=20
 LSTM_num=100
 dense_num=20
 
 
-mix_file='777888.xlsx'
+# mix_file='666777-2.xlsx'
+mix_file='加入东方财富网股吧评论数据777888.xlsx'
 first_columns='search_index'
 
 
@@ -185,7 +192,6 @@ class Data_maker:
 origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back,long_term_back=long_term_back,short_term_back=short_term_back)
 
 
-### 一、读取原始数据
 new_dir='/Users/ccmac/Documents/毕业论文数据/数据二合为一'
 dir='/Users/ccmac/Documents/毕业论文数据/数据区间试验'
 wenben_dir='/Users/ccmac/Documents/毕业论文数据/每日均值'
@@ -193,6 +199,25 @@ daily_df=pd.read_excel(os.path.join(new_dir,mix_file))
 fif_df=pd.read_excel(os.path.join(dir,'fif_data.xlsx'))
 target_df=pd.read_excel(os.path.join(dir,'target.xlsx'))
 wenben_df=pd.read_excel(os.path.join(new_dir,mix_file))
+
+begin=pd.to_datetime(begin_date)
+end=pd.to_datetime(end_date)
+
+####一、所有数据（不仅仅是预测日，还包括之前20日）
+daily_df=daily_df.loc[(daily_df['trade_time']>=begin)&(daily_df['trade_time']<=end),:].reset_index()
+fif_df=fif_df.loc[(fif_df['trade_time']>=begin)&(fif_df['trade_time']<=end),:].reset_index()
+target_df=target_df.loc[(target_df['trade_time']>=begin)&(target_df['trade_time']<=end),:].reset_index()
+wenben_df=wenben_df.loc[(wenben_df['trade_time']>=begin)&(wenben_df['trade_time']<=end),:].reset_index()
+
+print('数据长度',daily_df.shape)
+print('数据索引',daily_df.index)
+
+print('前几行',daily_df.head())
+print('后几行',daily_df.tail())
+print('切分数据位置',daily_df.loc[daily_df.index>=train_num,:])
+
+print('fif_df',fif_df.head())
+print('fif_df_tail',fif_df.tail())
 
 
 
@@ -223,17 +248,16 @@ def wenben_norm(df):
     x=df.copy()
     sector_score_mean_value = df['sector_score'].mean(axis=0)
     search_index_mean_value = df['search_index'].mean(axis=0)
-    # media_attention_mean_value = df['media_attention'].mean(axis=0)
-
+    dongfang_mean_value = df['score'].mean(axis=0)
 
     sector_score_std_value = df['sector_score'].std()
     search_index_std_value = df['search_index'].std()
-    # media_attention_std_value = df['media_attention'].std()
+    dongfang_std_value = df['score'].std()
 
 
     x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
     x['search_index'] = (df['search_index'] - search_index_mean_value) / search_index_std_value
-    # x['media_attention'] = (df['media_attention'] - media_attention_mean_value) / media_attention_std_value
+    x['score'] = (df['score'] - dongfang_mean_value) / dongfang_std_value
 
     df=x
     return df
@@ -342,7 +366,7 @@ def my_model(long_term_back,short_term_back,wenben_sort):
 
 model=my_model(long_term_back=long_term_back,short_term_back=short_term_back,wenben_sort=wenben_sort)
 
-history=model.fit(x=[fif_train,daily_train,wenben_long_term_train,wenben_short_term_train],y=target_train,batch_size=batch_size,validation_split=0.25,epochs=epochs)
+history=model.fit(x=[fif_train,daily_train,wenben_long_term_train,wenben_short_term_train],y=target_train,batch_size=batch_size,validation_split=0.125,epochs=epochs)
 
 
 loss,accuracy = model.evaluate([fif_test,daily_test,wenben_long_term_test,wenben_short_term_test],y=target_test)
@@ -350,6 +374,7 @@ print(loss,accuracy)
 
 def gen_y_pred():
     y_predict=model.predict([fif_test,daily_test,wenben_long_term_test,wenben_short_term_test],batch_size=1).reshape(test_num-wenben_back).tolist() ###batch_size要设为1，不然evaluate和predict结果不同
+    print('------------------', y_predict)
     y_pred=[]
     for i,v in enumerate(y_predict):
         if v>0.5:
@@ -532,6 +557,7 @@ print('f1-score:',f1_score)
 
 #ROC曲线绘制
 y_predict=model.predict([fif_test,daily_test,wenben_long_term_test,wenben_short_term_test]).reshape(test_num-wenben_back).tolist()
+print('------------------',y_predict)
 fpr,tpr,threshold = roc_curve(target_test, y_predict) ###计算真正率和假正率
 # print(fpr,tpr,threshold)
 roc_auc = auc(fpr,tpr)

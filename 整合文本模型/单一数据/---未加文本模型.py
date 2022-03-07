@@ -1,18 +1,17 @@
 import pandas as pd
 import numpy as np
 import os
+from tensorflow import keras
 from matplotlib import pyplot as plt
-from keras.models import Model
-from keras import layers
-from keras import Input
-from sklearn.metrics import confusion_matrix,roc_curve,auc,recall_score,precision_score,f1_score
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers
+from tensorflow.keras import Input
+from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
 
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
-import keras
 
-import keras.losses
 
 
 # 参数设置
@@ -117,8 +116,9 @@ class Data_maker:
 
 origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back)
 
-dir='F:\\newstart\software\category\\tool\category\deal_with_data\武汉金融数据\标准化处理数据基础\数据区间试验'
-
+new_dir='/Users/ccmac/Documents/毕业论文数据/数据二合为一'
+dir='/Users/ccmac/Documents/毕业论文数据/数据区间试验'
+wenben_dir='/Users/ccmac/Documents/毕业论文数据/每日均值'
 daily_df=pd.read_excel(os.path.join(dir,'daily_data.xlsx'))
 fif_df=pd.read_excel(os.path.join(dir,'fif_data.xlsx'))
 target_df=pd.read_excel(os.path.join(dir,'target.xlsx'))
@@ -225,7 +225,7 @@ def split_data(train_num=train_num,wenben_back=wenben_back):
     daily_test_df=daily_df.loc[daily_df.index>=train_num]
     fif_train_df=fif_df.loc[fif_df.index<16*train_num]
     fif_test_df=fif_df.loc[fif_df.index>=16*train_num]
-    target_train_df=target_df.loc[target_df.index<train_num-wenben_back]
+    target_train_df=target_df.loc[target_df.index<train_num]
     target_test_df=target_df.loc[target_df.index>=train_num]
 
     daily_train_df=norm(daily_train_df)
@@ -303,7 +303,7 @@ def my_model():
     model=Model([fif_min_input,daily_input],output) #八股文：将输入和输出圈起来
 
     print(model.summary())
-    model.compile(optimizer=keras.optimizers.adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
+    model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
     return model
     # reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, mode='auto')
 
@@ -504,8 +504,3 @@ plt.show()
 # plt.xlabel('Predicted label')
 # plt.show()
 
-df9=pd.DataFrame({'损失值':loss,'准确率':accuracy,'夏普值':sharp,'收益率':result[2]-1,'最大回撤':[backtest],'查准率':[precision_score],'查全率':[recall_score],'f1-score':[f1_score]})
-df10=pd.DataFrame({'每日收益率':result[1]})
-path9='C:\\Users\Administrator\Desktop'
-df9.to_excel(os.path.join(path9,'数据表.xlsx'),index=False)
-df10.to_excel(os.path.join(path9,'每日收益率表.xlsx'),index=False)

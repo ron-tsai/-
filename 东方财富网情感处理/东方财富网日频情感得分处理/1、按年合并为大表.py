@@ -2,7 +2,7 @@ import pandas as pd
 import os
 path='/Users/ccmac/Desktop/情感分析存储'
 
-year=2017
+year=2016
 
 path_1='/Users/ccmac/Desktop/情感分析存储/{}年'.format(year)
 

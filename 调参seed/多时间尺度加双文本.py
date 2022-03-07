@@ -7,43 +7,48 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import layers
 from tensorflow.keras import Input
 from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
+from tensorflow.keras.utils import plot_model
+
+from sklearn.model_selection import train_test_split
+import numpy as np
+
 
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
 
 
-# import keras.losses
-
 
 begin_date='2016-01-01'
-end_date='2021-09-01'
+end_date='2021-09-30'
 
 
-
+seed = 9
 wenben_back=20
 total_day=1338
-train_num=1204
+train_num=1070
+validation_split=0.2
+
 long_term_back=10
-
-short_term_back=5
-
+short_term_back=10
 wenben_sort=2
-batch_size=8
-epochs=10
+batch_size=32
+
+epochs=50
+
 LSTM_num=100
 dense_num=20
-
+drop_num=0.2
 
 # mix_file='666777-2.xlsx'
-mix_file='777888.xlsx'
+mix_file='东方关注777888.xlsx'
 first_columns='search_index'
 
 
 
 test_num=total_day-train_num
 
-###第三步，将初步切分为训练集测试集的数据排列为array
+
 class Data_maker:
     def __init__(self,train_num,test_num,fif_back,daily_back,wenben_back,long_term_back,short_term_back):
         self.train_num=train_num
@@ -59,13 +64,14 @@ class Data_maker:
             rows = list(range(self.train_num - self.wenben_back)) #总共1489个数据，由于扣除前面20个数据，所以为1469
             samples = np.zeros((len(rows),
                                  self.daily_back,
-                                 5))
+                                 7))
             for j in rows:
 
                 samples[j] = data.loc[
                                   (data.index >= j) & (data.index < self.daily_back + j),
-                                  'open':'volume_rate']
+                                  'open':]
             print('日频训练array：',samples.shape)
+            print(samples)
             return samples
     def fif_train_data(self,data):
         while True:
@@ -76,9 +82,10 @@ class Data_maker:
             for j in rows:
 
                 samples[j] = data.loc[
-                              (data.index >= j * self.fif_back ) & (data.index < (j+1) * self.fif_back),
+                              (data.index >= 19* self.fif_back+j * self.fif_back) & (data.index <19*self.fif_back+ (j+1) * self.fif_back),
                               'open':]
             print('十五分钟训练array：',samples.shape)
+            print(samples)
             return samples
     def wenben_long_term_train_data(self,data):
         while True:
@@ -89,7 +96,7 @@ class Data_maker:
             for j in rows:
 
                 samples[j] = data.loc[
-                                  (data.index >= j) & (data.index < self.long_term_back + j),
+                                  (data.index >= self.daily_back+j-self.long_term_back) & (data.index < self.daily_back + j),
                                   first_columns:]
             print('文本长期训练array：',samples.shape)
             return samples
@@ -102,23 +109,25 @@ class Data_maker:
             for j in rows:
 
                 samples[j] = data.loc[
-                                  (data.index >= j) & (data.index < self.short_term_back + j),
+                                  (data.index >=self.daily_back+j-self.short_term_back) & (data.index < self.daily_back + j),
                                   first_columns:]
             print('文本短期训练array：',samples.shape)
+            print(samples)
             return samples
     def daily_test_data(self,data):
         while True:
             rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.daily_back,
-                                 5))
+                                 7))
             for j in rows:
 
 
                 samples[j] = data.loc[
-                                  (data.index >= self.train_num+j) & (data.index < self.train_num+self.daily_back + j),
-                                  'open':'volume_rate']
+                                  (data.index >=j+self.train_num) & (data.index <  j+self.daily_back+self.train_num ),
+                                  'open':]
             print('日测试array：',samples.shape)
+            print(samples)
 
             return samples
 
@@ -129,10 +138,11 @@ class Data_maker:
                                 self.long_term_back,
                                 wenben_sort))
             for j in rows:
+                # print(j) ##j从0开始
                 samples[j] = data.loc[
-                             (data.index >= self.train_num + j) & (data.index < self.train_num + self.long_term_back + j),
+                             (data.index >= self.train_num + j+self.daily_back- self.long_term_back ) & (data.index < self.train_num + j+self.daily_back),
                              first_columns:]
-            print('长期文本测试array：', samples.shape)
+            print('长期文本测试array：', samples.shape)        #改正samples[j] = data.loc[(data.index >= self.train_num + j) & (data.index < self.train_num + self.long_term_back + j),first_columns:]
             return samples
     def wenben_short_term_test_data(self, data):
         while True:
@@ -142,9 +152,9 @@ class Data_maker:
                                 wenben_sort))
             for j in rows:
                 samples[j] = data.loc[
-                             (data.index >= self.train_num + j) & (data.index < self.train_num + self.short_term_back + j),
+                             (data.index >= self.train_num + j+self.daily_back- self.short_term_back) & (data.index < self.train_num + j+self.daily_back),
                              first_columns:]
-            print('短期文本测试array：', samples.shape)
+            print('短期文本测试array：', samples.shape)   #改正samples[j] = data.loc[(data.index >= self.train_num + j) & (data.index < self.train_num + self.short_term_back + j),first_columns:]
             return samples
     def fif_test_data(self,data):
         while True:
@@ -156,7 +166,7 @@ class Data_maker:
 
 
                 samples[j] = data.loc[
-                                 (data.index >= 16*self.train_num+(j) * self.fif_back) & (data.index < 16*self.train_num+(j+1) * self.fif_back),
+                                 (data.index >=19* self.fif_back+16*self.train_num+(j) * self.fif_back) & (data.index < 19* self.fif_back+16*self.train_num+(j+1) * self.fif_back),
                                  'open':]
             print('十五分钟测试array：',samples.shape)
             return samples
@@ -169,6 +179,7 @@ class Data_maker:
 
                 targets[j] = data.loc[data.index == j+self.wenben_back, 'target']
             print('训练标签array',targets.shape)
+            print('训练targets',targets)
             return targets
     def target_test_data(self,data):
         while True:
@@ -179,11 +190,11 @@ class Data_maker:
 
                 targets[j] = data.loc[data.index == self.train_num+j+self.wenben_back, 'target'] ##出问题：应该是。而不是***：data.index == self.train_num+j
             print(targets.shape)
+            print('验证targets',targets)
             return targets
 
 
 origin_data=Data_maker(train_num=train_num,test_num=test_num,fif_back=16,daily_back=20,wenben_back=wenben_back,long_term_back=long_term_back,short_term_back=short_term_back)
-
 
 new_dir='/Users/ccmac/Documents/毕业论文数据/数据二合为一'
 dir='/Users/ccmac/Documents/毕业论文数据/数据区间试验'
@@ -196,7 +207,6 @@ wenben_df=pd.read_excel(os.path.join(new_dir,mix_file))
 begin=pd.to_datetime(begin_date)
 end=pd.to_datetime(end_date)
 
-####一、所有数据（不仅仅是预测日，还包括之前20日）
 daily_df=daily_df.loc[(daily_df['trade_time']>=begin)&(daily_df['trade_time']<=end),:].reset_index()
 fif_df=fif_df.loc[(fif_df['trade_time']>=begin)&(fif_df['trade_time']<=end),:].reset_index()
 target_df=target_df.loc[(target_df['trade_time']>=begin)&(target_df['trade_time']<=end),:].reset_index()
@@ -204,6 +214,7 @@ wenben_df=wenben_df.loc[(wenben_df['trade_time']>=begin)&(wenben_df['trade_time'
 
 print('数据长度',daily_df.shape)
 print('数据索引',daily_df.index)
+
 
 print('前几行',daily_df.head())
 print('后几行',daily_df.tail())
@@ -235,24 +246,21 @@ def norm(df):
     return df
 def wenben_norm(df):
     x=df.copy()
-    sector_score_mean_value = df['sector_score'].mean(axis=0)
+    # sector_score_mean_value = df['sector_score'].mean(axis=0)
     search_index_mean_value = df['search_index'].mean(axis=0)
-    # media_attention_mean_value = df['media_attention'].mean(axis=0)
+    dongfang_mean_value = df['score'].mean(axis=0)
 
-    sector_score_std_value = df['sector_score'].std()
+    # sector_score_std_value = df['sector_score'].std()
     search_index_std_value = df['search_index'].std()
-    # media_attention_std_value = df['media_attention'].std()
+    dongfang_std_value = df['score'].std()
 
 
-    x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
+    # x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
     x['search_index'] = (df['search_index'] - search_index_mean_value) / search_index_std_value
-    # x['media_attention'] = (df['media_attention'] - media_attention_mean_value) / media_attention_std_value
+    x['score'] = (df['score'] - dongfang_mean_value) / dongfang_std_value
 
     df=x
     return df
-
-
-####二.读入的数据先切分为训练集和测试集+标准化
 
 def split_data(train_num=train_num,wenben_back=wenben_back):
     # print(daily_df.loc[daily_df.index<train_num])
@@ -284,6 +292,44 @@ def split_data(train_num=train_num,wenben_back=wenben_back):
             'wenben_test_df': wenben_test_df
             }
 
+
+# def split_data(train_num=train_num,wenben_back=wenben_back,daily_df=daily_df,fif_df=fif_df,wenben_df=wenben_df): #1.读入的数据先切分+标准化
+#     # print(daily_df.loc[daily_df.index<train_num])
+#     ###先归一化
+#     daily_df=norm(daily_df)
+#     print("-----------",daily_df)
+#
+#     fif_df=norm(fif_df)
+#     print(fif_df)
+#
+#     wenben_df=wenben_norm(wenben_df)
+#
+#     ##再分割数据集
+#     daily_train_df=daily_df.loc[daily_df.index<train_num]
+#     daily_test_df=daily_df.loc[daily_df.index>=train_num]
+#     fif_train_df=fif_df.loc[fif_df.index<16*train_num]
+#     fif_test_df=fif_df.loc[fif_df.index>=16*train_num]
+#     wenben_train_df=wenben_df.loc[wenben_df.index<train_num]
+#     wenben_test_df=wenben_df.loc[wenben_df.index>=train_num]
+#
+#     target_train_df=target_df.loc[target_df.index<train_num]
+#     target_test_df=target_df.loc[target_df.index>=train_num]
+#
+#
+#
+#
+#     return {'daily_train_df':daily_train_df,
+#             'daily_test_df':daily_test_df,
+#             'fif_train_df':fif_train_df,
+#             'fif_test_df':fif_test_df,
+#             'target_train_df':target_train_df,
+#             'target_test_df':target_test_df,
+#             'wenben_train_df':wenben_train_df,
+#             'wenben_test_df': wenben_test_df
+#             }
+#
+
+
 ###二、读入数据先切分
 daily_train_df=split_data()['daily_train_df']
 print('日频训练切分：',daily_train_df.shape)
@@ -303,10 +349,7 @@ wenben_norm_train_df=split_data()['wenben_train_df']
 wenben_norm_test_df=split_data()['wenben_test_df']
 
 
-
-###第三步，将初步切分为训练集测试集的数据排列为array
 DM=origin_data
-
 
 daily_train=DM.daily_train_data(daily_train_df)
 daily_test=DM.daily_test_data(daily_test_df)
@@ -314,6 +357,7 @@ fif_train=DM.fif_train_data(fif_train_df)
 fif_test=DM.fif_test_data(fif_test_df)
 target_train=DM.target_train_data(target_train_df)
 target_test=DM.target_test_data(target_test_df)
+
 
 wenben_long_term_train=DM.wenben_long_term_train_data(wenben_norm_train_df)
 wenben_short_term_train=DM.wenben_short_term_train_data(wenben_norm_train_df)
@@ -325,56 +369,53 @@ print('文本数据',wenben_long_term_train)
 print('交易数据',daily_train)
 
 
+seed=np.random.seed(seed)
+x1_train, x1_test, x2_train, x2_test, y_train, y_test = train_test_split(fif_train,daily_train, target_train ,test_size=0.2,random_state=seed,shuffle=True)
+print('@@@@@@@@@',x1_train)
 
-def my_model(long_term_back,short_term_back,wenben_sort):
-
+def my_model():
     ##### 一、模型搭建
-
-    # 文本输入训练(!!!卷积滤镜行列先后)
-
-    ###文本不应该有长短期时间之分
-    # wenben_long_term_input=Input(shape=(long_term_back,wenben_sort),dtype='float32',name='wenben_long_term_input')
-    # Conv1D_fif=layers.Conv1D(16,1,strides=1)(wenben_long_term_input)
-    # LSTM_long_term=layers.LSTM(LSTM_num)(Conv1D_fif)
-
-    wenben_short_term_input = Input(shape=(short_term_back,wenben_sort), dtype='float32', name='wenben_short_term_input')
-    Conv1D_fif = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
-    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_fif)
     # 15分钟频输入训练(!!!卷积滤镜行列先后)
     fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # fif_min_input=(8,16,4,1)
-    Conv1D_fif=layers.Conv1D(16,1,strides=1)(fif_min_input)
+    Conv1D_fif=layers.Conv1D(filters=16,kernel_size=1,strides=1)(fif_min_input)
     LSTM_fif=layers.LSTM(LSTM_num)(Conv1D_fif)
 
     # 日频输入训练
-    daily_input=Input(shape=(20,5),dtype='float32',name='daily_input')
+    daily_input=Input(shape=(20,7),dtype='float32',name='daily_input')
     # daily_input=(8,16,4,1)
-    Conv1D_daily=layers.Conv1D(16,1,strides=1)(daily_input)
+    Conv1D_daily=layers.Conv1D(filters=16,kernel_size=1,strides=1)(daily_input)
     LSTM_daily=layers.LSTM(LSTM_num)(Conv1D_daily)
     # 15分钟频训练结果和日频训练结果合并
-    concatenated=layers.concatenate([LSTM_fif,LSTM_daily,LSTM_short_term],axis=-1) # axis=-1按照最后一个轴粘合
+    concatenated=layers.concatenate([LSTM_fif,LSTM_daily],axis=-1) # axis=-1按照最后一个轴粘合
 
-    alloy=layers.Dense(dense_num,activation='relu')(concatenated) #将粘合结果再接一个全连接层
-    dropout=layers.Dropout(0.2)(alloy)
+    alloy=layers.Dense(dense_num)(concatenated) #将粘合结果再接一个全连接层
+    dropout=layers.Dropout(drop_num)(alloy)
     output=layers.Dense(1,activation='sigmoid')(dropout)
-    model=Model([fif_min_input,daily_input,wenben_short_term_input],output) #八股文：将输入和输出圈起来
+    model=Model([fif_min_input,daily_input],output) #八股文：将输入和输出圈起来
 
     print(model.summary())
     model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
     return model
     # reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, mode='auto')
+model=my_model()
 
-model=my_model(long_term_back=long_term_back,short_term_back=short_term_back,wenben_sort=wenben_sort)
+plot_model(model, show_shapes=True, show_layer_names=True)
 
-history=model.fit(x=[fif_train,daily_train,wenben_short_term_train],y=target_train,batch_size=batch_size,validation_split=0.125,epochs=epochs)
+callback = keras.callbacks.EarlyStopping(monitor='loss', patience=1)#使用loss作为监测数据，轮数设置为1
 
+history=model.fit(x=[x1_train,x2_train],y=y_train,batch_size=batch_size,epochs=epochs,validation_data=([x1_test,x2_test] ,y_test))
 
-loss,accuracy = model.evaluate([fif_test,daily_test,wenben_short_term_test],y=target_test)
+# plot_model(model, show_shapes=True, show_layer_names=False)
+
+loss,accuracy = model.evaluate([fif_test,daily_test],y=target_test)
 print(loss,accuracy)
 
+y_predict = model.predict([fif_test, daily_test]).reshape(test_num - wenben_back).tolist()
+print('------------------',y_predict)
+def gen_y_pred(y_predict):
+    y_predict=y_predict
 
-def gen_y_pred():
-    y_predict=model.predict([fif_test,daily_test,wenben_short_term_test],batch_size=1).reshape(test_num-wenben_back).tolist() ###batch_size要设为1，不然evaluate和predict结果不同
     y_pred=[]
     for i,v in enumerate(y_predict):
         if v>0.5:
@@ -383,12 +424,16 @@ def gen_y_pred():
             y_pred.append(0)
     return y_pred
 
-y_pred=gen_y_pred()
-print(y_pred)
+
+
+
+
+
+y_pred=gen_y_pred(y_predict)
 
 # 回测代码试写
 
-class Back_tes_trader:  ###第二步
+class Back_tes_trader:
     def __init__(self,train_num,daily_back,wenben_back):
         self.train_num=train_num
         self.daily_back=daily_back
@@ -396,28 +441,28 @@ class Back_tes_trader:  ###第二步
     def daily_test_data(self,data):
         while True:
             samples = data.loc[
-                data.index >=self.train_num+self.wenben_back-1 ,
-                ['open','close']]  ##改了-1
+                data.index >=self.train_num+self.wenben_back ,
+                ['open','close']]
             print(data.index)
             return samples
 
-back_tes_trader=Back_tes_trader(train_num=train_num,daily_back=20,wenben_back=wenben_back) ##获取回测期数据df["open","close"]
+back_tes_trader=Back_tes_trader(train_num=train_num,daily_back=20,wenben_back=wenben_back)
 
 
 
-def split_back_trader(train_num=train_num):   ###第一步
+def split_back_trader(train_num=train_num):
 
     daily_test_df=daily_df.loc[daily_df.index>=train_num]
 
     return {'daily_test_df':daily_test_df}
 
 
-back_df=split_back_trader()['daily_test_df'] ##1、获取回测期df，还需传入Back_tes_trader
+back_df=split_back_trader()['daily_test_df']
 # print('日频测试切分：',back_df.shape)
 
 
 
-backtrader_df=back_tes_trader.daily_test_data(back_df) ###2、传入
+backtrader_df=back_tes_trader.daily_test_data(back_df)
 
 # print(backtrader_df.shape)
 # print(backtrader_df)
@@ -427,30 +472,32 @@ backtrader_df['day_rate_of_return']=backtrader_df['close']/backtrader_df['open']
 
 clo_1=backtrader_df.loc[(backtrader_df.index<total_day-1),"close"].tolist()
 
-backtrader_df.loc[(backtrader_df.index>=train_num+20),'last_close']=clo_1  ##改
+backtrader_df.loc[(backtrader_df.index>=train_num+20+1),'last_close']=clo_1
 backtrader_df['sale_rate_of_return']=backtrader_df['open']/backtrader_df['last_close']-1
+# def get_backtrader_character(x):
+#     if
 
-
+# print(backtrader_df)
 print(backtrader_df)
 print(backtrader_df.shape)
 trade_day_return_list=[]
 return_list=[]
 every_day_return_list=[]
-def backtrader(list,df): ###第三步
+def backtrader(list,df):
     a=0
 
     rate_of_return = 1
     for i,v in enumerate(list):
-        if (v ==1)&(a==0): ##从无到有，a是持股状态
-            b=(1 + df.loc[train_num+20 + i, 'day_rate_of_return']) ###day_rate_of_return日内收益率
-            rate_of_return= rate_of_return * b ###rate_of_return是当前收益率
+        if (v ==1)&(a==0):
+            b=(1 + df.loc[train_num+20 + i, 'day_rate_of_return'])
+            rate_of_return= rate_of_return * b
             a=1
-            trade_day_return_list.append(b-1) ##交易日收益率
+            trade_day_return_list.append(b-1)
             return_list.append(rate_of_return)
-            every_day_return_list.append(b - 1) ##每一天收益率（包括0）
+            every_day_return_list.append(b - 1)
 
         elif (v ==1)&(a==1):
-            b=(1 + df.loc[train_num+20 + i, 'rate_of_return']) ###rate_of_return日间收益率
+            b=(1 + df.loc[train_num+20 + i, 'rate_of_return'])
             rate_of_return= rate_of_return *b
             a=a
             trade_day_return_list.append(b-1)
@@ -478,9 +525,9 @@ result=backtrader(y_pred,backtrader_df)
 #     final_list.append(i-1)
 # print(final_list)
 
-print(result[1]) ###交易收益统计列表
-print(result[2]) ### rate_of_return是当前收益率
-print(result[3]) ###每一天本金列表
+print('每日收益率',result[1])
+
+print(result[3])
 
 pingjun_nian_jiaoyi_ri=240*len(result[1])/(len(y_pred))
 sharp=(np.mean(result[1]))/(np.std(result[1],ddof=1))*np.sqrt(pingjun_nian_jiaoyi_ri)
@@ -506,18 +553,7 @@ backtest=np.max(backtest_list)
 print('最大回测：',backtest)
 
 
-#检查数据
-print('每日收益率',result[1])
-target_test_ddf=pd.Series(target_test)
-# print('目标数据标签',target_test_ddf)
-print('预测结果',y_pred)
 
-print('目标测试数据标签',target_test)
-
-target_counts=target_test_ddf.value_counts()
-print('目标数据标签统计',target_counts)
-y_p=pd.Series(y_pred)
-print('统计预测结果个数',y_p.value_counts())
 # fpr,tpr,threshold = roc_curve(target_test, y_pred) ###计算真正率和假正率
 # print(fpr,tpr,threshold)
 # roc_auc = auc(fpr,tpr)
@@ -561,12 +597,25 @@ print('f1-score:',f1_score)
 # plt.ylabel('True label')
 # plt.xlabel('Predicted label')
 # plt.show()
+#检查数据
+print('每日收益率',result[1])
+target_test_ddf=pd.Series(target_test)
+# print('目标数据标签',target_test_ddf)
+print('预测结果',y_pred)
 
+print('目标测试数据标签',target_test)
+
+target_counts=target_test_ddf.value_counts()
+print('目标数据标签统计',target_counts)
+y_p=pd.Series(y_pred)
+print('统计预测结果个数',y_p.value_counts())
 
 #ROC曲线绘制
-y_predict=model.predict([fif_test,daily_test,wenben_short_term_test]).reshape(test_num-wenben_back).tolist()
+# y_predict=model.predict([fif_test,daily_test]).reshape(test_num-wenben_back).tolist()
+# print('ROC的y预期',y_predict)
 fpr,tpr,threshold = roc_curve(target_test, y_predict) ###计算真正率和假正率
 # print(fpr,tpr,threshold)
+print('------------------',y_predict)
 roc_auc = auc(fpr,tpr)
 
 
@@ -582,3 +631,5 @@ plt.ylabel('True Positive Rate')
 plt.title('Receiver operating characteristic example')
 plt.legend(loc="lower right")
 plt.show()
+
+

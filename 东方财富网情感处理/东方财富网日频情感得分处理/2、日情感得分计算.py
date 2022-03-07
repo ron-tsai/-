@@ -3,7 +3,7 @@ import os
 import math
 path='/Users/ccmac/Desktop/情感分析存储'
 
-year=2019
+year=2016
 
 file='/Users/ccmac/Desktop/情感分析存储/{}年情感分类合并.xlsx'.format(year)
 

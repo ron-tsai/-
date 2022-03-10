@@ -17,7 +17,7 @@ import numpy as np
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
 
-seed = 0
+seed = 2
 
 begin_date='2016-01-01'
 end_date='2021-09-01'
@@ -33,7 +33,9 @@ short_term_back=10
 drop_num=0.2
 wenben_sort=2
 batch_size=32
-epochs=38
+
+epochs=40
+
 LSTM_num=100
 dense_num=20
 
@@ -382,8 +384,8 @@ def my_model(short_term_back,wenben_sort):
     # LSTM_long_term=layers.LSTM(LSTM_num)(Conv1D_fif)
 
     wenben_short_term_input = Input(shape=(short_term_back,wenben_sort), dtype='float32', name='wenben_short_term_input')
-    Conv1D_fif = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
-    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_fif)
+    Conv1D_wenben = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
+    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_wenben)
     # 15分钟频输入训练(!!!卷积滤镜行列先后)
     fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # fif_min_input=(8,16,4,1)

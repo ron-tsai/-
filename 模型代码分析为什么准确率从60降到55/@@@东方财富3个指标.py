@@ -24,7 +24,7 @@ end_date='2021-09-01'
 wenben_back=20
 total_day=1338
 train_num=1070
-validation_split=0.25
+validation_split=0.2
 
 
 long_term_back=10
@@ -355,8 +355,8 @@ def my_model(long_term_back,short_term_back,wenben_sort):
     # LSTM_long_term=layers.LSTM(LSTM_num)(Conv1D_fif)
 
     wenben_short_term_input = Input(shape=(short_term_back,wenben_sort), dtype='float32', name='wenben_short_term_input')
-    Conv1D_fif = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
-    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_fif)
+    Conv1D_wenben = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
+    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_wenben)
     # 15分钟频输入训练(!!!卷积滤镜行列先后)
     fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # fif_min_input=(8,16,4,1)

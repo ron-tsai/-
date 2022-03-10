@@ -33,7 +33,7 @@ short_term_back=5
 drop_num=0.2
 wenben_sort=2
 batch_size=32
-epochs=20
+epochs=40
 LSTM_num=100
 dense_num=20
 
@@ -381,8 +381,8 @@ def my_model(short_term_back,wenben_sort):
     # LSTM_long_term=layers.LSTM(LSTM_num)(Conv1D_fif)
 
     wenben_short_term_input = Input(shape=(short_term_back,wenben_sort), dtype='float32', name='wenben_short_term_input')
-    Conv1D_fif = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
-    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_fif)
+    Conv1D_wenben = layers.Conv1D(16, 1, strides=1)(wenben_short_term_input)
+    LSTM_short_term = layers.LSTM(LSTM_num)(Conv1D_wenben)
     # 15分钟频输入训练(!!!卷积滤镜行列先后)
     fif_min_input=Input(shape=(16,5),dtype='float32',name='fif_min_input')
     # fif_min_input=(8,16,4,1)

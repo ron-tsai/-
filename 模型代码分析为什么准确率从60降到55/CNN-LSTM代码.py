@@ -2,40 +2,33 @@ import pandas as pd
 import numpy as np
 import os
 from tensorflow import keras
-from matplotlib import pyplot as plt
+
 from tensorflow.keras.models import Model
 from tensorflow.keras import layers
 from tensorflow.keras import Input
-from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
-from matplotlib import pyplot
-from tensorflow.keras.layers import LSTM
-plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
-plt.rcParams['axes.unicode_minus'] = False
 
-from tensorflow.keras import Sequential
-from  tensorflow.keras.layers import Dense
 
-from sklearn.model_selection import train_test_split
-import numpy as np
 
-begin_date='2016-01-01'
+
+
+
+
+begin_date='2013-01-01'
 end_date='2021-09-30'
 
-seed = 1
+
 
 wenben_back=20
-total_day=1338
-train_num=1070
-validation_split=0.2
-
+total_day=2062
+train_num=1650
 long_term_back=10
-short_term_back=5
+short_term_back=10
 wenben_sort=2
-batch_size=64
+batch_size=16
 
 epochs=20
 
-LSTM_num=124
+LSTM_num=100
 dense_num=20
 drop_num=0.2
 
@@ -63,12 +56,12 @@ class Data_maker:
             rows = list(range(self.train_num - self.wenben_back)) #总共1489个数据，由于扣除前面20个数据，所以为1469
             samples = np.zeros((len(rows),
                                  self.daily_back,
-                                 5))
+                                 4))
             for j in rows:
 
                 samples[j] = data.loc[
                                   (data.index >= j) & (data.index < self.daily_back + j),
-                                  'open':'volume_rate']
+                                  'open':'close']
             print('日频训练array：',samples.shape)
             print(samples)
             return samples
@@ -77,12 +70,12 @@ class Data_maker:
             rows = list(range(self.train_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                  self.fif_back,
-                                 5))
+                                 4))
             for j in rows:
 
                 samples[j] = data.loc[
-                              (data.index >= 18* self.fif_back+j * self.fif_back) & (data.index <18*self.fif_back+ (j+1) * self.fif_back),
-                              'open':]
+                              (data.index >= 19* self.fif_back+j * self.fif_back) & (data.index <19*self.fif_back+ (j+1) * self.fif_back),
+                              'open':'low']
             print('十五分钟训练array：',samples.shape)
             print(samples)
             return samples
@@ -118,13 +111,13 @@ class Data_maker:
             rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.daily_back,
-                                 5))
+                                 4))
             for j in rows:
 
 
                 samples[j] = data.loc[
                                   (data.index >=j+self.train_num) & (data.index <  j+self.daily_back+self.train_num ),
-                                  'open':'volume_rate']
+                                  'open':'close']
             print('日测试array：',samples.shape)
             print(samples)
 
@@ -160,13 +153,13 @@ class Data_maker:
             rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.fif_back,
-                                 5))
+                                 4))
             for j in rows:
 
 
                 samples[j] = data.loc[
-                                 (data.index >=18* self.fif_back+16*self.train_num+(j) * self.fif_back) & (data.index < 18* self.fif_back+16*self.train_num+(j+1) * self.fif_back),
-                                 'open':]
+                                 (data.index >=19* self.fif_back+16*self.train_num+(j) * self.fif_back) & (data.index < 19* self.fif_back+16*self.train_num+(j+1) * self.fif_back),
+                                 'open':'low']
             print('十五分钟测试array：',samples.shape)
             return samples
     def target_train_data(self,data):
@@ -334,63 +327,60 @@ print('文本数据',wenben_long_term_train)
 print('交易数据',daily_train)
 
 
-seed=np.random.seed(seed)
-x1_train, x1_test, y_train, y_test = train_test_split(daily_train, target_train ,test_size=0.2,random_state=seed,shuffle=True)
-print('@@@@@@@@@',x1_train)
+
+def my_model():
+    ##### 一、模型搭建
+    # 15分钟频输入训练(!!!卷积滤镜行列先后)
+    fif_min_input=Input(shape=(16,4),dtype='float32',name='fif_min_input')
+    # fif_min_input=(8,16,4,1)
+    Conv1D_fif=layers.Conv1D(16,1,strides=1)(fif_min_input)
+    LSTM_fif=layers.LSTM(LSTM_num)(Conv1D_fif)
+
+    # 日频输入训练
+    daily_input=Input(shape=(20,4),dtype='float32',name='daily_input')
+    # daily_input=(8,16,4,1)
+    Conv1D_daily=layers.Conv1D(16,1,strides=1)(daily_input)
+    LSTM_daily=layers.LSTM(LSTM_num)(Conv1D_daily)
+
+    # 15分钟频训练结果和日频训练结果合并
+    concatenated=layers.concatenate([LSTM_fif,LSTM_daily],axis=-1) # axis=-1按照最后一个轴粘合
+
+    alloy=layers.Dense(dense_num,activation='relu')(concatenated) #将粘合结果再接一个全连接层
+    dropout=layers.Dropout(drop_num)(alloy)
+    output=layers.Dense(1,activation='sigmoid')(dropout)
+    model=Model([fif_min_input,daily_input],output) #八股文：将输入和输出圈起来
+
+    print(model.summary())
+    model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),loss='binary_crossentropy',metrics=['acc'])
+    return model
+    # reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, mode='auto')
+
+model=my_model()
+
+history=model.fit(x=[fif_train,daily_train],y=target_train,batch_size=batch_size,epochs=epochs,validation_split=0.125,shuffle=True)
 
 
-model = Sequential()
-model.add(layers.Conv1D(16,1,input_shape=(daily_train.shape[1], daily_train.shape[2])))
-model.add(LSTM(128))
-model.add(Dense(1))
-model.compile(loss='mae', optimizer='adam',metrics=['acc'])
-# fit network
-history = model.fit(x1_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x1_test ,y_test),
-                    shuffle=False)
 
-loss,accuracy = model.evaluate(daily_test,y=target_test)
-
+loss,accuracy = model.evaluate([fif_test,daily_test],y=target_test)
 print(loss,accuracy)
 
-y_predict = model.predict(daily_test).reshape(test_num - wenben_back).tolist()
-
-# plot history
-acc=history.history['acc']
-val_acc=history.history['val_acc']
-loss=history.history['loss']
-val_loss=history.history['val_loss']
-
-acc_epochs=range(len(acc))
-plt.plot(acc_epochs,acc,'bo',label='Training acc')
-plt.plot(acc_epochs,val_acc,'b',label='Validation acc')
-plt.title('Training and validation accuracy')
-plt.legend()
-
-plt.figure()
-
-plt.plot(acc_epochs,loss,'bo',label='Training loss')
-plt.plot(acc_epochs,val_loss,'b',label='Validation loss')
-plt.title('Training and validation loss')
-plt.legend()
-plt.show()
-
-fpr,tpr,threshold = roc_curve(target_test, y_predict) ###计算真正率和假正率
-# print(fpr,tpr,threshold)
+y_predict = model.predict([fif_test, daily_test]).reshape(test_num - wenben_back).tolist()
 print('------------------',y_predict)
-roc_auc = auc(fpr,tpr)
 
 
-lw = 2
-plt.figure()
-plt.plot(fpr, tpr, color='darkorange',
-         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc) ###假正率为横坐标，真正率为纵坐标做曲线
-plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver operating characteristic example')
-plt.legend(loc="lower right")
-plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

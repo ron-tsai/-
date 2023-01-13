@@ -30,6 +30,7 @@ train_num=1070
 long_term_back=10
 
 short_term_back=10
+
 drop_num=0.2
 wenben_sort=2
 batch_size=32

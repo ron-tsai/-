@@ -17,7 +17,7 @@ import numpy as np
 plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
 plt.rcParams['axes.unicode_minus'] = False
 
-seed = 1
+seed = 3
 
 begin_date='2016-01-01'
 end_date='2021-09-01'
@@ -39,8 +39,8 @@ dense_num=20
 
 
 # mix_file='666777-2.xlsx'
-mix_file='东方关注777888.xlsx'
-first_columns='score'
+mix_file='777888.xlsx'
+first_columns='search_index'
 
 
 
@@ -62,12 +62,12 @@ class Data_maker:
             rows = list(range(self.train_num - self.wenben_back)) #总共1489个数据，由于扣除前面20个数据，所以为1469
             samples = np.zeros((len(rows),
                                  self.daily_back,
-                                 7))
+                                 5))
             for j in rows:
 
                 samples[j] = data.loc[
                                   (data.index >= j) & (data.index < self.daily_back + j),
-                                  'open':]
+                                  'open':'volume_rate']
             print('日频训练array：',samples.shape)
             print(samples)
             return samples
@@ -80,7 +80,7 @@ class Data_maker:
             for j in rows:
 
                 samples[j] = data.loc[
-                              (data.index >= 19* self.fif_back+j * self.fif_back) & (data.index <19*self.fif_back+ (j+1) * self.fif_back),
+                              (data.index >= 18* self.fif_back+j * self.fif_back) & (data.index <18*self.fif_back+ (j+1) * self.fif_back),
                               'open':]
             print('十五分钟训练array：',samples.shape)
             print(samples)
@@ -117,13 +117,13 @@ class Data_maker:
             rows = list(range(self.test_num - self.wenben_back))
             samples = np.zeros((len(rows),
                                 self.daily_back,
-                                 7))
+                                 5))
             for j in rows:
 
 
                 samples[j] = data.loc[
                                   (data.index >=j+self.train_num) & (data.index <  j+self.daily_back+self.train_num ),
-                                  'open':]
+                                  'open':'volume_rate']
             print('日测试array：',samples.shape)
             print(samples)
 
@@ -164,7 +164,7 @@ class Data_maker:
 
 
                 samples[j] = data.loc[
-                                 (data.index >=16*self.train_num+19* self.fif_back+(j) * self.fif_back) & (data.index < 16*self.train_num+19* self.fif_back+(j+1) * self.fif_back),
+                                 (data.index >=18* self.fif_back+16*self.train_num+(j) * self.fif_back) & (data.index < 18* self.fif_back+16*self.train_num+(j+1) * self.fif_back),
                                  'open':]
             print('十五分钟测试array：',samples.shape)
             return samples
@@ -245,16 +245,16 @@ def wenben_norm(df):
     x=df.copy()
     # sector_score_mean_value = df['sector_score'].mean(axis=0)
     search_index_mean_value = df['search_index'].mean(axis=0)
-    dongfang_mean_value = df['score'].mean(axis=0)
+    # dongfang_mean_value = df['score'].mean(axis=0)
 
     # sector_score_std_value = df['sector_score'].std()
     search_index_std_value = df['search_index'].std()
-    dongfang_std_value = df['score'].std()
+    # dongfang_std_value = df['score'].std()
 
 
     # x['sector_score']=(df['sector_score']-sector_score_mean_value)/sector_score_std_value
     x['search_index'] = (df['search_index'] - search_index_mean_value) / search_index_std_value
-    x['score'] = (df['score'] - dongfang_mean_value) / dongfang_std_value
+    # x['score'] = (df['score'] - dongfang_mean_value) / dongfang_std_value
 
     df=x
     return df
@@ -378,7 +378,7 @@ def my_model():
 
 
     # 日频输入训练
-    daily_input=Input(shape=(20,7),dtype='float32',name='daily_input')
+    daily_input=Input(shape=(20,5),dtype='float32',name='daily_input')
     # daily_input=(8,16,4,1)
     Conv1D_daily=layers.Conv1D(16,1,strides=1)(daily_input)
     LSTM_daily=layers.LSTM(LSTM_num)(Conv1D_daily)
@@ -608,7 +608,7 @@ roc_auc = auc(fpr,tpr)
 lw = 2
 plt.figure()
 plt.plot(fpr, tpr, color='darkorange',
-         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc) ###假正率为横坐标，真正率为纵坐标做曲线
+         lw=lw, label='ROC curve (area = %0.3f)' % roc_auc) ###假正率为横坐标，真正率为纵坐标做曲线
 plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])

@@ -23,7 +23,7 @@ begin_date='2016-01-01'
 end_date='2021-09-30'
 
 
-seed = 0
+seed = 3
 wenben_back=20
 total_day=1338
 train_num=1070

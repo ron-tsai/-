@@ -335,7 +335,7 @@ print('交易数据',daily_train)
 
 
 
-def my_model(long_term_back,short_term_back,wenben_sort):
+def my_model(short_term_back,wenben_sort):
     ##### 一、模型搭建
     wenben_short_term_input = Input(shape=(short_term_back, wenben_sort), dtype='float32',
                                     name='wenben_short_term_input')

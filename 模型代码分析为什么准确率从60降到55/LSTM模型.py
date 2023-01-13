@@ -9,14 +9,18 @@ from tensorflow.keras import Input
 from sklearn.metrics import confusion_matrix,roc_curve, auc,recall_score,precision_score,f1_score
 from matplotlib import pyplot
 from tensorflow.keras.layers import LSTM
-plt.rcParams['font.sans-serif'] = ['SimHei'] # 指定默认字体
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.family'] = 'Heiti TC'
 
 from tensorflow.keras import Sequential
 from  tensorflow.keras.layers import Dense,Dropout
 
+from sklearn.model_selection import train_test_split
+import numpy as np
+
 begin_date='2016-01-01'
 end_date='2021-09-30'
+
+seed = 3
 
 daily_back=20
 wenben_back=20
@@ -29,7 +33,7 @@ short_term_back=5
 wenben_sort=2
 batch_size=64
 
-epochs=20
+epochs=15
 
 LSTM_num=124
 dense_num=20
@@ -330,18 +334,20 @@ print('文本数据',wenben_long_term_train)
 print('交易数据',daily_train)
 
 
-
+seed=np.random.seed(seed)
+x1_train, x1_test, y_train, y_test = train_test_split(daily_train, target_train ,test_size=0.2,random_state=seed,shuffle=True)
+print('@@@@@@@@@',x1_train)
 
 
 model = Sequential()
-model.add(LSTM(100,input_shape=(daily_train.shape[1], daily_train.shape[2])))
-
+model.add(LSTM(100,input_shape=(daily_train.shape[1], daily_train.shape[2]),return_sequences=True))
+model.add(LSTM(100, return_sequences=False))
 
 model.add(Dropout(0.02))
 model.add(Dense(1,activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(lr=1e-3),metrics=['acc'])
 # fit network
-history = model.fit(daily_train, target_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split,
+history = model.fit(x1_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x1_test ,y_test),
                     shuffle=False)
 
 loss,accuracy = model.evaluate(daily_test,y=target_test)

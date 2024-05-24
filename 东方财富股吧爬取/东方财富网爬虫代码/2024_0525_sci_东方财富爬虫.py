@@ -8,7 +8,9 @@ from time import sleep
 import pandas as pd
 import os
 
-path='/Users/ccmac/Desktop/pc2'
+
+path='/Users/ccmac/Desktop/pachong'
+
 
 def getHTMLText():
     tunnel = "tps371.kdlapi.com:15818"
@@ -23,11 +25,12 @@ def getHTMLText():
 
 
     df_list = os.listdir(path)
-    num_list = list(range(70000, 85000))
+    num_list = list(range(1, 85000))
     # print(num_list)
     complete_list = []
     for fname in df_list:
-        complete_list.append(fname[:-5])
+        print(fname)
+        complete_list.append(fname[:-5])  ##文件名倒退5个字符，留下数字（去除.xlsx）
         # print(fname[:-5])
     for del_v in complete_list:
         # print(del_v)
@@ -35,15 +38,22 @@ def getHTMLText():
             del_v = int(del_v)
             num_list.remove(del_v)
     print(len(num_list))
+
+
+    add_num = [num - 3 for num in num_list[:3]]  #在未爬取的页面中，往前增加3个页面，再爬一次这3个页面
+    num_list = num_list + add_num
+    num_list = sorted(num_list)
+    print(add_num)
+
     while True:
 
         headers = {
-            'User-Agent': UserAgent().random  # #生成随机请求头
+            'User-Agent':UserAgent().random
         }
-
 
         try:
             for num in num_list:
+                print(num)
                 url = 'http://guba.eastmoney.com/list,zssh000001,f_{}.html'.format(num)
 
 
@@ -52,19 +62,42 @@ def getHTMLText():
 
 
                 if response.status_code == 200:
+
                     tree = etree.HTML(response.text)
 
+                    reply=tree.xpath(
+                        '//tbody/tr//div[contains(@class,"reply")]//text()'
+                    )
+                    read=tree.xpath(
+                        '//tbody/tr//div[contains(@class,"read" )]//text()'
+                    )
                     title = tree.xpath(
-                        '//*[@id="articlelistnew"]//span[@class="l3 a3"]/a/@title')
+                        '//tbody/tr//div[@class="title"]//a/text()')
                     # title = title.encode('iso-8859-1','ignore').decode('GBK','ignore')
 
                     time = tree.xpath(
-                        '//*[@id="articlelistnew"]//span[@class="l5 a5"]/text()'
+                        '//tbody/tr//div[contains(@class,"update" )]/text()')
+
+                    author= tree.xpath(
+                        '//tbody/tr//div[contains(@class,"author") ]//text()'
                     )
 
-                    time = time[1:]
+                    print(title)
+                    print(len(title))
+                    print(time)
+                    print(len(time))
+                    print(author)
+                    print(len(author))
+                    print(reply)
+                    print(len(reply))
+                    print(read)
+                    print(len(read))
 
-                    df = pd.DataFrame({'time': time, 'title': title})
+
+                    sleep(1)
+
+                    df = pd.DataFrame({'time': time, 'title': title, 'author': author, 'reply': reply,'read': read})
+                    print(df)
                     if df.empty == True:  ##empty不加（），判断df是否无数据
                         print('df为空')  ##报错退出
 
@@ -79,11 +112,11 @@ def getHTMLText():
                 "https": "http://%(user)s:%(pwd)s@%(proxy)s/" % {"user": username, "pwd": password, "proxy": tunnel}
             }
             df_list = os.listdir(path)
-            num_list = list(range(70000, 85000))
+            num_list = list(range(1, 85000))
             # print(num_list)
             complete_list = []
             for fname in df_list:
-                complete_list.append(fname[:-5])
+                complete_list.append(fname[:-5]) ##文件名倒退5个字符，留下数字（去除.xlsx）
                 # print(fname[:-5])
             for del_v in complete_list:
                 # print(del_v)
@@ -91,6 +124,8 @@ def getHTMLText():
                     del_v = int(del_v)
                     num_list.remove(del_v)
             print(len(num_list))
+            add_num = [num - 3 for num in num_list[:3]]  # 在未爬取的页面中，往前增加3个页面，再爬一次这3个页面
+            num_list = num_list + add_num
             # print(num_list)
         finally:
             sleep(0.2)

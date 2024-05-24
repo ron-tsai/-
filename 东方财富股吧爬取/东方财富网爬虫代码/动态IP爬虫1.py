@@ -28,7 +28,7 @@ path='/Users/ccmac/Desktop/pachong'
 
 
 df_list=os.listdir(path)
-num_list=list(range(2000,70000))
+num_list=list(range(1,30000))
 # print(num_list)
 complete_list=[]
 for fname in df_list:
@@ -49,7 +49,7 @@ print(len(num_list))
 
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"}
+    "User-Agent": UserAgent().random}
 # 动态IP爬虫.py
 for num in num_list:
     a = random.random()
@@ -71,11 +71,11 @@ for num in num_list:
     tree = etree.HTML(content_text)
 
     title = tree.xpath(
-        '//*[@id="articlelistnew"]//span[@class="l3 a3"]/a//text()')
+        '//tbody//div[@class="title"]//text()')
     # title = title.encode('iso-8859-1','ignore').decode('GBK','ignore')
 
     time = tree.xpath(
-        '//*[@id="articlelistnew"]//span[@class="l5 a5"]/text()'
+        '//tbody//div[@class="update pub_time"]//text()'
     )
 
     time = time[1:]

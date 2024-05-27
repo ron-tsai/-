@@ -3,11 +3,12 @@ import requests
 
 from lxml import etree
 from fake_useragent import UserAgent
+import json
 
 from time import sleep
 import pandas as pd
 import os
-
+import re
 
 path='/Users/ccmac/Desktop/pachong'
 
@@ -29,7 +30,7 @@ def getHTMLText():
     # print(num_list)
     complete_list = []
     for fname in df_list:
-        print(fname)
+
         complete_list.append(fname[:-5])  ##文件名倒退5个字符，留下数字（去除.xlsx）
         # print(fname[:-5])
     for del_v in complete_list:
@@ -37,13 +38,13 @@ def getHTMLText():
         if del_v != '.DS_':
             del_v = int(del_v)
             num_list.remove(del_v)
-    print(len(num_list))
+
 
 
     add_num = [num - 3 for num in num_list[:3]]  #在未爬取的页面中，往前增加3个页面，再爬一次这3个页面
     num_list = num_list + add_num
     num_list = sorted(num_list)
-    print(add_num)
+
 
     while True:
 
@@ -53,46 +54,63 @@ def getHTMLText():
 
         try:
             for num in num_list:
-                print(num)
+
                 url = 'http://guba.eastmoney.com/list,zssh000001,f_{}.html'.format(num)
 
 
                 # 使用代理访问
                 response = requests.get(url=url, headers=headers, proxies=proxies, timeout=15)
-                with open('./sougou.html', 'w', encoding='utf-8') as file:
-                    file.write(response.text)
+
+                # 将HTML文档字符串解析为Element对象
+
 
                 if response.status_code == 200:
 
+                    data=response.text
                     tree = etree.HTML(response.text)
 
-                    reply=tree.xpath(
-                        '//tbody/tr//div[contains(@class,"reply")]/text()'
+                    script = tree.xpath(
+                        '/html/body/script[1]/text()'
                     )
-                    read=tree.xpath(
-                        '//tbody/tr//div[contains(@class,"read" )]/text()'
-                    )
-                    title = tree.xpath(
-                        '//tbody/tr//div[@class="title"]//a//text()')
-                    # title = title.encode('iso-8859-1','ignore').decode('GBK','ignore')
+                    obj=re.compile(r"var article_list=\((?P<json>.*?)\);")
 
-                    time = tree.xpath(
-                        '//tbody/tr//div[contains(@class,"update" )]/text()')
+                    content=obj.search(data).group('json')
+                    dic=json.loads(content)
+                    print(dic)
+                    # diff=dic["data"]["diff"]
 
-                    author= tree.xpath(
-                        '//tbody/tr//div[contains(@class,"author") ]//text()'
-                    )
 
-                    print(title)
-                    print(len(title))
-                    print(time)
-                    print(len(time))
-                    print(author)
-                    print(len(author))
-                    print(reply)
-                    print(len(reply))
-                    print(read)
-                    print(len(read))
+
+
+
+
+                    # reply=tree.xpath(
+                    #     '//tbody/tr//div[contains(@class,"reply")]/text()'
+                    # )
+                    # read=tree.xpath(
+                    #     '//tbody/tr//div[contains(@class,"read" )]/text()'
+                    # )
+                    # title = tree.xpath(
+                    #     '//tbody/tr//div[@class="title"]//a//text()')
+                    # # title = title.encode('iso-8859-1','ignore').decode('GBK','ignore')
+                    #
+                    # time = tree.xpath(
+                    #     '//tbody/tr//div[contains(@class,"update" )]/text()')
+                    #
+                    # author= tree.xpath(
+                    #     '//tbody/tr//div[contains(@class,"author") ]//text()'
+                    # )
+
+                    # print(title)
+                    # print(len(title))
+                    # print(time)
+                    # print(len(time))
+                    # print(author)
+                    # print(len(author))
+                    # print(reply)
+                    # print(len(reply))
+                    # print(read)
+                    # print(len(read))
 
 
                     sleep(1)

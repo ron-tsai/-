@@ -44,9 +44,6 @@ def getHTMLText():
                     print(title,user,time)
 
 
-
-
-
             else:
                 print('无效网页')
         except Exception:
